@@ -1,5 +1,4 @@
 import math
-from tkinter import W
 import plotly.graph_objects as go
 import streamlit as st
 import streamlit_antd_components as sac
