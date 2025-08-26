@@ -12,16 +12,16 @@ def view_data_page():
                 title="Select order identifier"
             ),
             sac.StepsItem(
-                title="Select sales product",
+                title="Select product name",
             ),
             sac.StepsItem(
                 title="Select sales date",
             ),
             sac.StepsItem(
-                title="Select sales amount",
+                title="Select unit price",
             ),
             sac.StepsItem(
-                title="Select sales quantity",
+                title="Select sold quantity",
             )
         ], 
         key="view_data_steps", 
