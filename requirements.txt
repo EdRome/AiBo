@@ -1,0 +1,8 @@
+streamlit
+pandas
+matplotlib
+seaborn
+python-dotenv 
+plotly
+streamlit-option-menu
+st-pages
