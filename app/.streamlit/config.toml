@@ -1,0 +1,15 @@
+[browser]
+gatherUsageStats = false
+
+[server]
+enableStaticServing = true
+
+[theme]
+primaryColor = "#2a8bfd"
+font = "League Spartan"
+
+[[theme.fontFaces]]
+family = "League Spartan"
+url = "app/static/LeagueSpartan-VariableFont_wght.woff"
+weight = 400
+style = "normal"

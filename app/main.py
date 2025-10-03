@@ -1,6 +1,8 @@
 import streamlit as st
 from src.utils.localization import get_user_location, get_language_from_location, translations
 
+st.set_page_config(page_title="AiBo", page_icon="./static/SORO-LAB.ico", layout="wide")
+
 if "step" not in st.session_state:
     st.session_state["step"] = 0
 if "df" not in st.session_state:

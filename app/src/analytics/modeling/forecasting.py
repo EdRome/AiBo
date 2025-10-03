@@ -58,9 +58,6 @@ class PyMEForecastDemand:
         self.inference_engine_inventory.df = self.forecast_df
         recommendations = self.inference_engine_inventory.get_recommendation()
 
-        print(recommendations)
-        print(product)
-
         self.forecast_df["recommendation"] = self.forecast_df.index.map(lambda product: recommendations.get(product)["recommended_action"])
         self.forecast_df["recommendation_explanation"] = self.forecast_df.index.map(lambda product: recommendations.get(product)["explanation"])
 
