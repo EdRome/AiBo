@@ -1,7 +1,5 @@
 import streamlit as st
-import streamlit_antd_components as sac
-from src.app.pages.home import home_page
-from streamlit_searchbox import st_searchbox
+from src.utils.localization import get_user_location, get_language_from_location, translations
 
 if "step" not in st.session_state:
     st.session_state["step"] = 0
@@ -43,78 +41,24 @@ if "TOTAL_PAGES" not in st.session_state:
     st.session_state["TOTAL_PAGES"] = 1
 if "ITEMS_PER_PAGE" not in st.session_state:
     st.session_state["ITEMS_PER_PAGE"] = 10
+if "language" not in st.session_state:
+    st.session_state["language"] = ""
+if "translations" not in st.session_state:
+    st.session_state["translations"] = {}
 
-def search_item(searchterm: str) -> list:
-    items = st.session_state["unique_items"]
-    return [item for item in items if searchterm.lower() in item.lower()]
+country_code = get_user_location()
+language = get_language_from_location(country_code)
+st.session_state["language"] = language
+st.session_state["translations"] = translations[language]
 
-def sort_items(sort_by: str):
-    if sort_by == "demand":
-        st.session_state["forecast"].forecast_df = st.session_state["forecast"].forecast_df.sort_values(by="forecast_quantity", ascending=False)
-    elif sort_by == "name":
-        st.session_state["forecast"].forecast_df = st.session_state["forecast"].forecast_df.sort_values(by=st.session_state["product_column"], ascending=True)
+t = st.session_state["translations"]
 
-def sidebar():
-    # with st.sidebar:
-    st.session_state["step"] = sac.steps(
-        items=[
-            sac.StepsItem(
-                title="Upload your data"),
-            sac.StepsItem(
-                title="View your data"),
-            sac.StepsItem(
-                title="Optimize your inventory"),
-            sac.StepsItem(
-                title="Product mix optimization"),
-        ],
-        index=st.session_state["step"], 
-        return_index=True,
-        size="lg", 
-        key="step-sidebar",
-        placement="vertical"
-    )
+pages = {
+    t["Step 1"]: [st.Page("pages/home.py", title=t["Upload your data"])],
+    t["Step 2"]: [st.Page("pages/view_data.py", title=t["Review your data and select the columns"])],
+    t["Step 3"]: [st.Page("pages/optimize_inventory.py", title=t["Forecasting your demand"])],
+    # "Product Mix Optimization": st.Page("pages/product_mix_optimization.py", title="Product Mix Optimization")
+}
 
-    if st.session_state["forecast"] is not None:
-
-        page_num = st.number_input(
-            "Go to page", 
-            min_value=1, 
-            max_value=st.session_state["TOTAL_PAGES"], 
-            value=st.session_state.current_page,
-            key="page_selector"
-        )
-
-        st.session_state["ITEMS_PER_PAGE"] = st.selectbox(
-            "Items per page", 
-            [10, 20, 50], 
-            index=0,
-            key="items_per_page"
-        )
-
-        item_name = st_searchbox(
-            search_item,
-            placeholder="Search item",
-            # label="Search item"
-        )
-
-        col1, col2 = st.columns(2)
-        with col1:
-            st.button("Sort by demand", on_click=sort_items, key="sort_items_button_demand", args=("demand",))
-        with col2:
-            st.button("Sort by item name", on_click=sort_items, key="sort_items_button_name", args=("name",))
-
-        if item_name != st.session_state["item_selector"]:
-            st.session_state["item_selector"] = item_name
-            st.rerun()
-
-        if page_num != st.session_state.current_page:
-            st.session_state.current_page = page_num
-            st.rerun()
-
-# try:
-with st.sidebar:
-    sidebar()
-home_page()
-# except Exception as e:
-#     st.error("Ocurrió un error al cargar el archivo")
-#     st.error(e)
+page = st.navigation(pages, position="sidebar")
+page.run()

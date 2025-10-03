@@ -8,9 +8,11 @@ class OptimizeInventory:
 
     def __init__(self, df: pd.DataFrame, forecast: ForecastDemand, elasticity: Elasticity):
         self.date_col = st.session_state["date_column"]
+        self.product_col = st.session_state["product_column"]
         self.df = df
         self.forecast = forecast
         self.elasticity = elasticity
+        self.optimized_df = None
         # self._validate_data()
 
     def optimize_inventory(self):
@@ -22,8 +24,8 @@ class OptimizeInventory:
         prob = LpProblem("Maximizar_Ventas", LpMaximize)
         p = LpVariable.dicts("Precio", products, lowBound=0)
         for j in products:
-            p[j].lowBound = 0.8 * p_actual[j]
-            p[j].upBound = 1.2 * p_actual[j]
+            p[j].lowBound = 0.5 * p_actual[j]
+            p[j].upBound = 2.0 * p_actual[j]
 
         d = {}
         for i in products:
@@ -45,8 +47,8 @@ class OptimizeInventory:
             ] for j in products
         }
         optimizacion_df = pd.DataFrame(optimizacion).T.rename(columns={0: "Precio optimo", 1: "Demanda esperada", 2: "Precio actual"})
-        optimizacion_df["Demanda esperada"] = optimizacion_df["Demanda esperada"].astype(int)
-        return optimizacion_df
+        optimizacion_df["Demanda optimizada"] = optimizacion_df["Demanda esperada"].astype(int)
+        self.optimized_df = optimizacion_df
         # st.write(f"Ventas totales optimizadas: {value(prob.objective)}")
 
     def demanda_ajustada(self, i, p, F, p_actual, products, beta):
