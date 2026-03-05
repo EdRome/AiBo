@@ -2,6 +2,7 @@ import os
 import logging
 from twilio.rest import Client
 from data.db.messages import insert_message
+from data.models.sqlalchemy.messages import Message
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +37,17 @@ def send_whatsapp_message(to, body):
             to='whatsapp:' + to,
             body=body
         )
-        insert_message(os.environ.get("TWILIO_WHATSAPP_NUMBER"), to, body, {})
+
+        insert_message(
+            Message(
+                sender=os.environ.get("TWILIO_WHATSAPP_NUMBER"),
+                receiver=to,
+                body=body,
+                data={},
+                multimedia=""
+            )
+        )
+        # insert_message(os.environ.get("TWILIO_WHATSAPP_NUMBER"), to, body, {})
         return message
     except Exception as e:
         logger.error(f"Error al enviar el mensaje: {e}")

@@ -10,6 +10,7 @@ from state_machines.executor import StateMachineExecutor
 from state_machines.Onboarding.Etapa1 import Etapa1
 from state_machines.Menu.Menu import MenuMachine
 from data.db.messages import insert_message
+from data.models.sqlalchemy.messages import Message
 from data.db.memory import get_memory, insert_memory
 from data.models.memory.memory import Memory, GlobalMemory, LocalState, GenericResult
 from data.db.sales import consulta_ventas_dia_actual
@@ -108,15 +109,28 @@ def consume_message():
         active_state = memory.local_state.get_active_state()
         logger.info(f"Estado activo: {active_state}")
         if active_state and active_state == 'etapa1':
-            full_message = "\n".join(memory.local_state.etapa1.user_message)
+            # full_message = "\n".join(memory.local_state.etapa1.user_message)
+            full_message = memory.local_state.etapa1.get_full_user_message()
             etapa1 = Etapa1.from_memory(memory, active_state, full_message)
             if "Para ponerme en contexto, ¿me podrías contar en pocas palabras" in etapa1.ultimo_mensaje_enviado:
                 etapa1.memory.local_state.change_status("etapa1", False)
             memory = etapa1.memory
 
         elif active_state and active_state in ['menu','ventas','inventario']:
-            full_message = "\n".join(getattr(memory.local_state, active_state).user_message)
-            menu = MenuMachine.from_memory(memory, active_state, full_message)
+            # full_message = "\n".join(getattr(memory.local_state, active_state).user_message)
+            image = None
+            full_message = None
+
+            if active_state == 'ventas':
+                ventas_obj = memory.local_state.ventas
+                if ventas_obj.is_image():
+                    image = ventas_obj.get_image_content()
+                else:
+                    full_message = ventas_obj.get_full_user_message()
+            else:
+                full_message = getattr(memory.local_state, active_state).get_full_user_message()
+
+            menu = MenuMachine.from_memory(memory, active_state, full_message, image)
             memory = menu.memory
 
         elif not active_state:
@@ -157,12 +171,11 @@ def message():
         raw_from = form_data.get('From', '')
         raw_to = form_data.get('To', '')
         body = form_data.get('Body', '')
+        media_url = ''
 
         # Inicia modificación para procesar imagenes
         try:
             media_url = form_data.get('MediaUrl0', '')
-            if media_url:
-                body = media_url
         except:
             pass
         # Termina modificación para procesar imagenes
@@ -174,7 +187,16 @@ def message():
         # 4. Convertir a un diccionario completo (Object.fromEntries)
         data = form_data.to_dict()
 
-        confirm = insert_message(sender, receiver, body, data)
+        message = Message(
+            sender=sender, 
+            receiver=receiver, 
+            body=body, 
+            data=data,
+            multimedia=media_url
+        )
+
+        # confirm = insert_message(sender, receiver, body, data)
+        confirm = insert_message(message)
         if confirm is None or not confirm:
             return make_response(jsonify({
                 'status': 'error',
@@ -191,10 +213,14 @@ def message():
                 machine_stack=[], 
                 global_memory=GlobalMemory(), 
                 local_state=LocalState(
-                    etapa1=GenericResult(active=True, user_message=[body]), 
-                    etapa2=GenericResult(active=False), 
-                    etapa3=GenericResult(active=False), 
-                    etapa4=GenericResult(active=False)), 
+                    etapa1=GenericResult(
+                        active=True,
+                        user_message=[body]
+                    ), 
+                    # etapa2=GenericResult(active=False), 
+                    # etapa3=GenericResult(active=False), 
+                    # etapa4=GenericResult(active=False)
+                ), 
                 last_interaction=datetime.now(),
                 task_name="")
             # language = language_analyzer(body)
@@ -204,7 +230,7 @@ def message():
             # etapa1 = Etapa1(sender, memory.global_memory.datos_negocio, body)
         else:
             # Actualizar memoria existente con el nuevo mensaje
-            memory = StateMachineExecutor.process_user_message(memory, body)
+            memory = StateMachineExecutor.process_user_message(memory, body if not media_url else media_url)
             memory.last_interaction = datetime.now()
             StateMachineExecutor.persist_memory(memory)
 

@@ -1,3 +1,4 @@
+import os
 import json
 import logging
 from datetime import datetime
@@ -7,6 +8,8 @@ from data.db.utils import get_pool
 from data.models.memory.memory import Memory
 
 logger = logging.getLogger(__name__)
+schema = os.environ.get("DB_SCHEMA")
+
 
 def insert_memory(memory: Memory) -> int:
     logger.info("Insertando memoria")
@@ -17,7 +20,7 @@ def insert_memory(memory: Memory) -> int:
     json_global_memory_str = memory.global_memory.model_dump_json()
     json_local_state_str = memory.local_state.model_dump_json()
     last_interaction_str = memory.last_interaction.isoformat()
-    insert_stmt = sqlalchemy.text("INSERT INTO transactional.memory (user_id, active_context, machine_stack, global_memory, local_state, last_interaction, creditos_disponibles) VALUES (:user_id, :active_context, :machine_stack, :global_memory, :local_state, :last_interaction, :creditos_disponibles)")
+    insert_stmt = sqlalchemy.text(f"INSERT INTO {schema}.memory (user_id, active_context, machine_stack, global_memory, local_state, last_interaction, creditos_disponibles) VALUES (:user_id, :active_context, :machine_stack, :global_memory, :local_state, :last_interaction, :creditos_disponibles)")
     with pool.connect() as conn:
         conn.execute(
             insert_stmt, 
@@ -40,7 +43,7 @@ def get_memory(user_id: str) -> Memory:
     Obtiene una memoria de la base de datos.
     """
     pool = get_pool()
-    select_stmt = sqlalchemy.text("SELECT * FROM transactional.memory WHERE user_id = :user_id")
+    select_stmt = sqlalchemy.text(f"SELECT * FROM {schema}.memory WHERE user_id = :user_id")
     with pool.connect() as conn:
         result = conn.execute(
             select_stmt, 
@@ -70,7 +73,7 @@ def update_memory(user_id: str, active_context: str, machine_stack: List[str],
     json_global_memory_str = json.dumps(global_memory)
     json_local_state_str = json.dumps(local_state)
     last_interaction_str = last_interaction.isoformat()
-    update_stmt = sqlalchemy.text("UPDATE transactional.memory SET active_context = :active_context, machine_stack = :machine_stack, global_memory = :global_memory, local_state = :local_state, last_interaction = :last_interaction, task_name = :task_name, creditos_disponibles = :creditos_disponibles WHERE user_id = :user_id")
+    update_stmt = sqlalchemy.text(f"UPDATE {schema}.memory SET active_context = :active_context, machine_stack = :machine_stack, global_memory = :global_memory, local_state = :local_state, last_interaction = :last_interaction, task_name = :task_name, creditos_disponibles = :creditos_disponibles WHERE user_id = :user_id")
     with pool.connect() as conn:
         conn.execute(
             update_stmt, 

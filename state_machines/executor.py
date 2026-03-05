@@ -32,7 +32,7 @@ class StateMachineExecutor:
             state_obj = getattr(memory.local_state, state_name)
             if state_obj.active:
                 return state_name
-        return None
+        return 'menu'
     
     @staticmethod
     def sync_machine_state(machine, memory: Memory) -> None:
@@ -113,12 +113,12 @@ class StateMachineExecutor:
         active_state = StateMachineExecutor.get_active_state(memory)
         if not active_state:
             logger.warning("No hay estado activo para procesar el mensaje")
-            # return memory
-            active_state = 'menu'
+            return memory
         
         # Agregar mensaje al estado activo
         state_obj = getattr(memory.local_state, active_state)
         state_obj.user_message.append(message)
+        # state_obj.user_message.append(message)
         
         return memory
     
