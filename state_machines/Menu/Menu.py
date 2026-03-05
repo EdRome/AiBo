@@ -9,6 +9,7 @@ from data.models.memory.memory import Memory
 from whatsapp.send_message.send_message import send_whatsapp_message, send_whatsapp_template
 from llm.core.entity_extractor import get_intention, confirm_delete
 from llm.core.sales_extractor import get_sales_data, get_image_content
+from llm.core.ocr import ocr_v1
 from whatsapp.messages.multiidioma import MultiIdioma
 from data.db.sales import crear_venta, borrar_venta
 
@@ -18,9 +19,10 @@ logger.setLevel(logging.INFO)
 
 class MenuMachine():
     
-    def __init__(self, memory: Memory, message: str, idioma: MultiIdioma = None):
+    def __init__(self, memory: Memory, message: str, idioma: MultiIdioma = None, image: bytes = None):
         self.memory = memory
         self.user_message = message
+        self.image = image
         self.idioma = idioma if idioma else MultiIdioma(memory.global_memory.language)
 
     def on_enter_inventario(self):
@@ -57,17 +59,6 @@ class MenuMachine():
         self.memory.local_state.ventas.procesar_venta = True # Activa el siguiente estado "procesar_venta"
 
     def _process_sales_text(self):
-        pass
-
-    def _process_sales_images(self):
-        basic = HTTPBasicAuth(
-            os.environ.get("TWILIO_ACCOUNT_SID"), 
-            os.environ.get("TWILIO_AUTH_TOKEN")
-        )
-        image_data = requests.get(self.user_message, auth=basic).content
-        get_image_content(image_data)
-
-    def process_sales_message(self):
         # Extrae información de venta
         sales_data = get_sales_data(self.user_message, self.memory.user_id)
 
@@ -76,12 +67,38 @@ class MenuMachine():
         self.memory.restar_credito(num_ventas)
         logger.error(f'Creditos restantes: {self.memory.creditos_disponibles}')
 
-        # Crea registro de venta en BD
-        venta_id = crear_venta(sales_data)
-        if venta_id:
-            # Envía mensaje de confirmación
+        return sales_data
+
+    def _process_sales_images(self):
+        logger.error("Procesando imagen...")
+        sales_data = ocr_v1(self.image)
+
+        num_ventas = len(sales_data.detalles)
+        logger.error(f'Número de ventas: {num_ventas}')
+        self.memory.restar_credito(num_ventas)
+        logger.error(f'Creditos restantes: {self.memory.creditos_disponibles}')
+
+        return sales_data
+
+    def process_sales_message(self):
+        venta_id = None
+        total = None
+        detalle = None
+
+        if not self.image:
+            sales_data = self._process_sales_text()
+            venta_id = [crear_venta(venta) for venta in sales_data]
+            total = sales_data.calcula_total()
             detalle = sales_data.output_detail()
+        else:
+            sales_data = self._process_sales_images()
+            # Crea registro de venta en BD
+            venta_id = crear_venta(sales_data)
+            detalle = sales_data.output_detail
             total = sales_data.total
+        
+        if venta_id and detalle and total:
+            # Envía mensaje de confirmación
             logger.error(f"Detalle: {detalle}")
             logger.error(f"Total: {total}")
             send_whatsapp_template(
@@ -120,11 +137,12 @@ class MenuMachine():
         pass
 
     @classmethod
-    def from_memory(cls, memory: Memory, active_state: str, message: str):
+    def from_memory(cls, memory: Memory, active_state: str, message: str = None, image: bytes = None):
         logger.error("Entrando a Menu")
         maquina = cls(
             memory=memory,
-            message=message
+            message=message,
+            image=image
         )
 
         logger.error(f"Estado activo: {active_state}")

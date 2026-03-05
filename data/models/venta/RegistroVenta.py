@@ -15,7 +15,6 @@ class Venta(VentaBase):
     fecha: datetime = Field(default=datetime.now())
     created_at: datetime = Field(default=datetime.now())
     detalles: List[DetalleVenta]
-
     model_config = ConfigDict(from_attributes=True)
 
     def output_detail(self):
@@ -32,3 +31,21 @@ class Venta(VentaBase):
 
     def calcula_total(self):
         self.total = sum([detalle.cantidad * detalle.precio_unitario for detalle in self.detalles])
+
+class BatchVentas(BaseModel):
+    venta: List[Venta]
+
+    def output_detail(self):
+        mensaje = ""
+        detalle_str = "{cantidad} {producto} ${precio}"
+        for registro in self.venta:
+            for detalle in registro.detalles:
+                mensaje += "-" + detalle_str.format(
+                    cantidad = detalle.cantidad,
+                    producto = detalle.producto,
+                    precio = detalle.precio_unitario
+                ) + "\n"
+        return mensaje[:-1]
+
+    def calcula_total(self):
+        return sum([detalle.cantidad * detalle.precio_unitario for registro in self.venta for detalle in registro.detalles])
