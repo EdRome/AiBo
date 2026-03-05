@@ -119,7 +119,7 @@ def consume_message():
     elif active_state and active_state in ['menu','ventas','inventario']:
         # full_message = "\n".join(getattr(memory.local_state, active_state).user_message)
         full_message = getattr(memory.local_state, active_state).get_full_user_message()
-        if active == 'ventas':
+        if active_state == 'ventas':
             image = getattr(memory.local_state, active_state).get_image_content()
         menu = MenuMachine.from_memory(memory, active_state, full_message)
         memory = menu.memory
