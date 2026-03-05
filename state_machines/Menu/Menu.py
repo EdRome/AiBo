@@ -59,6 +59,7 @@ class MenuMachine():
         self.memory.local_state.ventas.procesar_venta = True # Activa el siguiente estado "procesar_venta"
 
     def _process_sales_text(self):
+        logger.error("Procesando mensaje...")
         # Extrae información de venta
         sales_data = get_sales_data(self.user_message, self.memory.user_id)
 
@@ -73,10 +74,14 @@ class MenuMachine():
         logger.error("Procesando imagen...")
         sales_data = ocr_v1(self.image)
 
-        num_ventas = len(sales_data.detalles)
+        num_ventas = sum(len(sale.detalles) for sale in sales_data.venta)
         logger.error(f'Número de ventas: {num_ventas}')
         self.memory.restar_credito(num_ventas)
         logger.error(f'Creditos restantes: {self.memory.creditos_disponibles}')
+
+        # Corrige teléfono
+        for sale in sales_data.venta:
+            sale.phone_number = self.memory.user_id
 
         return sales_data
 
@@ -85,16 +90,16 @@ class MenuMachine():
         total = None
         detalle = None
 
-        if not self.image:
-            sales_data = self._process_sales_text()
-            venta_id = [crear_venta(venta) for venta in sales_data]
+        if self.image:
+            sales_data = self._process_sales_images()
+            venta_id = [crear_venta(venta) for venta in sales_data.venta]
             total = sales_data.calcula_total()
             detalle = sales_data.output_detail()
         else:
-            sales_data = self._process_sales_images()
+            sales_data = self._process_sales_text()
             # Crea registro de venta en BD
             venta_id = crear_venta(sales_data)
-            detalle = sales_data.output_detail
+            detalle = sales_data.output_detail()
             total = sales_data.total
         
         if venta_id and detalle and total:
@@ -106,7 +111,7 @@ class MenuMachine():
                 self.idioma.obtener("MENSAJE_CONFIRMACION_VENTA"),
                 json.dumps({'lista_detalle': detalle,'total': str(total)})
             )
-            self.memory.local_state.ventas.id_ultima_venta = venta_id
+            self.memory.local_state.ventas.id_ultima_venta = venta_id[-1] if isinstance(venta_id, list) else venta_id
         else:
             send_whatsapp_message(self.memory.user_id, self.idioma.obtener('MENSAJE_ERROR_REGISTRO_VENTA'))
 

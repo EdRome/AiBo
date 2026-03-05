@@ -9,6 +9,9 @@ logger = logging.getLogger(__name__)
 db = get_session()
 
 def crear_venta(venta_data: VentaCreate):
+
+    logger.error(f"Venta: {venta_data.model_dump()}")
+
     # 1. Crear la instancia de la venta (Cabecera)
     nueva_venta = VentaDB(
         metodo_pago=venta_data.metodo_pago,

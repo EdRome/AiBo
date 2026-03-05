@@ -118,10 +118,19 @@ def consume_message():
 
     elif active_state and active_state in ['menu','ventas','inventario']:
         # full_message = "\n".join(getattr(memory.local_state, active_state).user_message)
-        full_message = getattr(memory.local_state, active_state).get_full_user_message()
+        image = None
+        full_message = None
+
         if active_state == 'ventas':
-            image = getattr(memory.local_state, active_state).get_image_content()
-        menu = MenuMachine.from_memory(memory, active_state, full_message)
+            ventas_obj = memory.local_state.ventas
+            if ventas_obj.is_image():
+                image = ventas_obj.get_image_content()
+            else:
+                full_message = ventas_obj.get_full_user_message()
+        else:
+            full_message = getattr(memory.local_state, active_state).get_full_user_message()
+
+        menu = MenuMachine.from_memory(memory, active_state, full_message, image)
         memory = menu.memory
 
     elif not active_state:

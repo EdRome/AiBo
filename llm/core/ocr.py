@@ -1,5 +1,7 @@
 import os
+import base64
 from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_core.messages import HumanMessage
 from config.config import MODEL_GEMINI_FLASH, OCR_TEMPERATURE, OCR_THINKING_BUDGET
 from llm.prompt.ocr import EXTRAER_DATOS_VENTA
 from llm.prompt.utils import INSTRUCCION_IDIOMA, CONTEXTO_ASISTENTE
