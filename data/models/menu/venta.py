@@ -24,7 +24,7 @@ class Venta(BaseModel):
     def get_full_user_message(self):
         return "\n".join(self.user_message)
 
-    def extract_image(self):
+    def get_image_content(self):
         for message in self.user_message:
             parsed_url = urlparse(message)
             if parsed_url.scheme and parsed_url.netloc:
