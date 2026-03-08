@@ -22,7 +22,7 @@ class WorkflowOrchestrator:
         """
         Punto de entrada principal para procesar cualquier mensaje entrante
         """
-        active_state = self.memory.local_state.active_state
+        active_state = self.memory.local_state.get_active_state()
 
         # 1. Determinar la intención del usuario
         intent = self._get_effective_intent(active_state, message)
