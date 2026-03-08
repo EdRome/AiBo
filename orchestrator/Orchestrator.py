@@ -30,12 +30,12 @@ class WorkflowOrchestrator:
         intent = self._get_effective_intent(active_state, message)
         logger.info(f"Intención efectiva detectada: {intent}")
 
-        # 2. Ejecutar el Action correspondiente
+        # 2. Manejar transiciones de estado y UI (MenuMachine)
+        self._handle_ui_transitions(intent)
+
+        # 3. Ejecutar el Action correspondiente
         if intent in self.actions:
             return self.actions[intent].execute(self.memory, message, image)
-        
-        # 3. Manejar transiciones de estado y UI (MenuMachine)
-        self._handle_ui_transitions(intent)
 
     def _get_effective_intent(self, active_state, message):
         """
