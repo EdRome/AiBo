@@ -3,7 +3,7 @@ from llm.core.entity_extractor import get_intention
 from whatsapp.messages.multiidioma import MultiIdioma
 from actions.create_sales_action import CreateSalesAction
 from actions.delete_sales_action import DeleteSalesAction
-from Menu import MenuMachine
+from state_machines.Menu.Menu import MenuMachine
 
 class WorkflowOrchestrator:
     def __init__(self, memory):
