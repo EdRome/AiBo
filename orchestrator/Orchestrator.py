@@ -5,6 +5,8 @@ from actions.create_sales_action import CreateSalesAction
 from actions.delete_sales_action import DeleteSalesAction
 from state_machines.Menu.Menu import MenuMachine
 
+logger = logging.getLogger(__name__)
+
 class WorkflowOrchestrator:
     def __init__(self, memory):
         self.memory = memory
