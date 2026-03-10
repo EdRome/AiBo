@@ -24,28 +24,26 @@ class WorkflowOrchestrator:
         """
         Punto de entrada principal para procesar cualquier mensaje entrante
         """
+        # 1. Obtener estado activo
         active_state = self.memory.local_state.get_active_state()
 
-        # 1. Determinar la intención del usuario
+        # 1.1 Determina la intención del usuario. Solo si estoy en el menu o no hay estado activo
         intent = self._get_effective_intent(active_state, message)
-        logger.info(f"Intención efectiva detectada: {intent}")
 
-        # 2. Manejar transiciones de estado y UI (MenuMachine)
-        self._handle_ui_transitions(intent)
-
-        # 3. Ejecutar el Action correspondiente
-        if intent in self.actions:
-            return self.actions[intent].execute(self.memory, message, image)
+        if (active_state and active_state == 'menu') or not active_state:
+            # 1.2 Manejar transiciones de estado y UI (MenuMachine)
+            self._handle_ui_transitions(intent)
+    
+        # 2. Ejecutar el Action correspondiente
+        elif active_state and active_state != 'menu':
+            self.memory = self.actions[intent].execute(self.memory, message, image)
+            self._reset_menu_buffer()
 
     def _get_effective_intent(self, active_state, message):
         """
         Si el usuario está en un estado específico (ej. ventas), mantenemos ese flujo.
         Si está en el menú o estado neutro, extraemos la intención con LLM.
         """
-        # Si el usuario ya está dentro de un flujo, el estado manda
-        if active_state and active_state != 'menu':
-            return active_state
-
         # Si está en el menú, usamos el LLM para saber a dónde quiere ir
         if message:
             return get_intention(message)
@@ -63,6 +61,7 @@ class WorkflowOrchestrator:
         """
         Usa MenuMachine para mover al usuario entre pantallas según su intención.
         """
+        logger.info("3. Manejando transiciones de estado y UI")
         if intent == 'registrar_venta':
             self.menu_ui.on_enter_venta()
 
@@ -78,3 +77,8 @@ class WorkflowOrchestrator:
         else:
             # Si no entiende la intención, regresa al menú por seguridad
             self.menu_ui.display_main_menu()
+
+    def _reset_menu_buffer(self):
+        self.memory.local_state.change_status('menu', True)
+        self.memory.local_state.menu.user_message = []
+        self.memory.local_state.menu.aibo_message = []

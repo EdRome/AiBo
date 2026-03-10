@@ -23,8 +23,8 @@ from llm.core.summary_creator import create_summary
 app = Flask(__name__)
 CORS(app)
 
+logging.basicConfig(level=logging.INFO) # O logging.DEBUG para ver todo
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 logger.error("Versión de la aplicación: 2.0.1 alpha")
 
@@ -90,7 +90,7 @@ def consume_message():
     Endpoint optimizado: Delega el procesamiento al WorkflowOrchestrator.
     """
     try:
-        logger.info("Consumiendo mensaje con Orquestador")
+        logger.info("1. Consumiendo mensaje con Orquestador")
         data = request.get_json()
         sender = data.get('sender')
 
@@ -118,6 +118,8 @@ def consume_message():
             else:
                 full_message = state_obj.get_full_user_message()
 
+
+        logger.info(f"2.1. Contenido recuperado: {full_message}, {image}")
         # 2. Ejecutar el Orquestador
         # El orquestador ahora reemplaza las llamadas manuales a Etapa1 o MenuMachine
         orchestrator = WorkflowOrchestrator(memory)

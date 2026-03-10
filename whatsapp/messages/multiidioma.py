@@ -32,7 +32,6 @@ class MultiIdioma:
                 return
             
             for archivo in os.listdir(self.ruta_traducciones):
-                logger.error(archivo)
                 if archivo.endswith('.json'):
                     idioma = archivo.split('.')[0].split('_')[1]
                     ruta_completa = os.path.join(self.ruta_traducciones, archivo)

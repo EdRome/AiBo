@@ -18,6 +18,7 @@ class MenuMachine():
 
     def display_main_menu(self):
         """Muestra el menú de inicio rápido y resetea el estado a 'menú."""
+        logger.info("3.1. Mostrando menú principal")
         send_whatsapp_template(
             self.memory.user_id,
             self.idioma.obtener('MENU_INICIO_RAPIDO')
@@ -26,17 +27,20 @@ class MenuMachine():
 
     def on_enter_venta(self):
         """Inicia visualmente el flujo de venta."""
+        logger.info("3.2. Iniciando flujo de venta")
         mensaje = self.idioma.obtener("MENSAJE_INICIO_VENTA")
         send_whatsapp_template(
             self.memory.user_id,
             mensaje
         )
-        self.memory.local_state.ventas.aibo_message.append(mensaje)
+        
         self.memory.local_state.change_status('ventas', True)
+        self.memory.local_state.ventas.aibo_message.append(mensaje)
         self.memory.local_state.ventas.procesar_venta = True
 
     def on_enter_borrar_venta(self):
         """Inicia visualmente el flujo de borrado."""
+        logger.info("3.3. Iniciando flujo de borrado")
         self.memory.local_state.change_status('ventas', True)
         self.memory.local_state.ventas.borrar_venta = True
         mensaje = self.idioma.obtener("MENSAJE_CONFIRMACION_BORRAR_VENTA")
@@ -44,6 +48,7 @@ class MenuMachine():
 
     def show_feature_missing(self):
         """Notifica sobre funcionalidades aún no implementadas."""
+        logger.info("3.4. Mostrando funcionalidad faltante")
         send_whatsapp_message(
             self.memory.user_id,
             self.idioma.obtener('MENSAJE_FUNCIONALIDAD_FALTANTE')
@@ -52,6 +57,7 @@ class MenuMachine():
 
     def show_error(self, error_key='MENSAJE_ERROR_REGISTRO_VENTA'):
         """Muestra un mensaje de error genérico al usuario."""
+        logger.info("3.5. Mostrando mensaje de error")
         send_whatsapp_message(
             self.memory.user_id,
             self.idioma.obtener(error_key)
