@@ -27,16 +27,16 @@ class WorkflowOrchestrator:
         # 1. Obtener estado activo
         active_state = self.memory.local_state.get_active_state()
 
-        # 1.1 Determina la intención del usuario. Solo si estoy en el menu o no hay estado activo
-        intent = self._get_effective_intent(active_state, message)
-
         if (active_state and active_state == 'menu') or not active_state:
+            # 1.1 Determina la intención del usuario. Solo si estoy en el menu o no hay estado activo
+            intent = self._get_effective_intent(active_state, message)
             # 1.2 Manejar transiciones de estado y UI (MenuMachine)
             self._handle_ui_transitions(intent)
     
         # 2. Ejecutar el Action correspondiente
         elif active_state and active_state != 'menu':
-            self.memory = self.actions[intent].execute(self.memory, message, image)
+            active_obj = getattr(self.memory.local_state, active_state)
+            self.memory = self.actions[active_obj.step].execute(self.memory, message, image)
             self._reset_menu_buffer()
 
     def _get_effective_intent(self, active_state, message):

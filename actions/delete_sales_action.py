@@ -11,9 +11,15 @@ class DeleteSalesAction(Action):
     def __init__(self, idioma):
         self.idioma = idioma
 
-    def execute(self, memory, message: str = None):
+    def execute(self, memory, message: str = None, image: bytes = None):
         """
         Valida la confirmación del usuario y elimina la última venta registrada
+        Args:
+            memory: Objeto Memory que contiene el estado de la conversación
+            message: Mensaje de texto del usuario
+            image: Imagen enviada por el usuario (no se usa, solo por compatibilidad con Action)
+        Returns:
+            Objeto Memory actualizado
         """
         try:
             # Recupera el último mensaje del usuario para confirmar la intención de borrado
@@ -24,7 +30,7 @@ class DeleteSalesAction(Action):
 
             if confirm_delete(last_message):
                 # Intenta borrar la venta usando el ID almacenado
-                id_venta = memory.last_state.ventas.id_ultima_venta
+                id_venta = memory.local_state.ventas.id_ultima_venta
                 exito = borrar_venta(id_venta, memory.user_id)
 
                 if exito:
@@ -49,7 +55,7 @@ class DeleteSalesAction(Action):
             )
 
         # Finaliza el flujo regresando al menú principal
-        self._reset_to_menu(memory)
+        return self._reset_to_menu(memory)
 
     def _reset_to_menu(self, memory):
         """ Limpia el estado de borrado y muestra el menú principal"""
@@ -61,3 +67,4 @@ class DeleteSalesAction(Action):
             memory.user_id,
             self.idioma.obtener("MENU_INICIO_RAPIDO")
         )
+        return memory

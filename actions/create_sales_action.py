@@ -15,6 +15,12 @@ class CreateSalesAction(Action):
     def execute(self, memory, message: str, image: bytes = None):
         """
         Orquesta el flujo de creación de venta: extracción -> créditos -> DB -> notificación
+        Args:
+            memory: Objeto Memory que contiene el estado de la conversación
+            message: Mensaje de texto del usuario
+            image: Imagen enviada por el usuario
+        Returns:
+            Objeto Memory actualizado
         """
         logger.info("2.1. Iniciando CreateSalesAction...")
         venta_id = None
@@ -29,7 +35,7 @@ class CreateSalesAction(Action):
                     sales_data = self._process_sales_images(memory, image)
                     total = sales_data.calcula_total()
                     detalle = sales_data.output_detail()
-                    venta_id = [crear_venta(venta) for venta in sales_data]
+                    venta_id = [crear_venta(venta) for venta in sales_data.venta]
 
                 else:
                     logger.info("2.1.3. Leyendo texto")
@@ -94,4 +100,5 @@ class CreateSalesAction(Action):
         memory.local_state.ventas.procesar_venta = False
         memory.local_state.ventas.user_message = []
         memory.local_state.ventas.aibo_message = []
+        memory.local_state.ventas.step = "waiting_product"
         return memory

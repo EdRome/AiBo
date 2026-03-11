@@ -37,12 +37,14 @@ class MenuMachine():
         self.memory.local_state.change_status('ventas', True)
         self.memory.local_state.ventas.aibo_message.append(mensaje)
         self.memory.local_state.ventas.procesar_venta = True
+        self.memory.local_state.ventas.step = "registrar_venta"
 
     def on_enter_borrar_venta(self):
         """Inicia visualmente el flujo de borrado."""
         logger.info("3.3. Iniciando flujo de borrado")
         self.memory.local_state.change_status('ventas', True)
         self.memory.local_state.ventas.borrar_venta = True
+        self.memory.local_state.ventas.step = "borrar_venta"
         mensaje = self.idioma.obtener("MENSAJE_CONFIRMACION_BORRAR_VENTA")
         send_whatsapp_template(self.memory.user_id, mensaje)
 
