@@ -1,5 +1,5 @@
-DATOS_NEGOCIO_EXTRACTION_PROMPT = """Debes extraer el nombre de la persona y el nombre del negocio.
-Extrae únicamente la información que te solicito y nada más. Si no es posible extraer algún dato, deja el campo vacío. Tu nombre como agente es AiBo.
+DATOS_NEGOCIO_EXTRACTION_PROMPT = """Debes extraer el nombre de la persona, el nombre del negocio y el giro del negocio.
+Extrae únicamente la información que te solicito y nada más. Si no es posible extraer algún dato, deja el campo vacío.
 Este es el mensaje del usuario {mensaje}"""
 
 EXTRAER_INTENCION_PROMPT = """Debes extraer la intención del mensaje del usuario.

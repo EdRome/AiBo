@@ -62,7 +62,7 @@ class MultiIdioma:
             logger.error(f"Error: Idioma '{nuevo_idioma}' no disponible")
             return False
     
-    def obtener(self, clave: str, **kwargs) -> str:
+    def obtener(self, clave: str, datos: dict = None) -> str:
         """
         Obtiene un mensaje traducido.
         
@@ -85,9 +85,9 @@ class MultiIdioma:
             return clave
         
         # Formatear el mensaje si hay parámetros
-        if kwargs:
+        if datos:
             try:
-                return mensaje.format(**kwargs)
+                return mensaje.format(**datos)
             except KeyError as e:
                 logger.error(f"Error al formatear mensaje '{clave}': {e}")
                 return mensaje

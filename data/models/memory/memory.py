@@ -2,17 +2,9 @@ from datetime import datetime, timezone
 from pydantic import BaseModel, Field
 from typing import List
 from data.models.etapa1.negocio import DatosNegocio
-from data.models.etapa2.needs import NeedsAnalysis
-from data.models.etapa2.channels import ChannelAnalysis
 from data.models.menu.venta import Venta
 from data.models.menu.inventario import Inventario
-
-# class UserMessages(BaseModel):
-#     text: str = Field(strict=False, default="")
-#     media_url: str = Field(strict=False, default="")
-
-#     def get_list(self):
-#         return [self.text, self.media_url]
+from data.models.menu.etapa1 import Etapa1
 
 class GenericResult(BaseModel):
     aibo_message: List[str] = Field(strict=True, default=[], validate_default=True)
@@ -21,19 +13,14 @@ class GenericResult(BaseModel):
     active: bool = Field(strict=True, default=False, validate_default=True)
 
     def get_full_user_message(self) -> str:
-        # return "\n".join(content for content in self.user_message.get_list() if content is not None and content != "")
         return "\n".join(self.user_message)
 
 class GlobalMemory(BaseModel):
     datos_negocio: DatosNegocio = Field(strict=True, default=DatosNegocio(), validate_default=True)
-    channels: ChannelAnalysis = Field(strict=True, default=ChannelAnalysis(), validate_default=True)
     language: str = Field(strict=True, default="es", validate_default=True)
 
 class LocalState(BaseModel):
-    etapa1: GenericResult = Field(strict=True, default=GenericResult(), validate_default=True)
-    # etapa2: GenericResult = Field(strict=True, default=GenericResult(), validate_default=True)
-    # etapa3: GenericResult = Field(strict=True, default=GenericResult(), validate_default=True)
-    # etapa4: GenericResult = Field(strict=True, default=GenericResult(), validate_default=True)
+    etapa1: Etapa1 = Field(strict=True, default=Etapa1(), validate_default=True)
     ventas: Venta = Field(strict=True, default=Venta(), validate_default=True)
     inventario: Inventario = Field(strict=True, default=Inventario(), validate_default=True)
     menu: GenericResult = Field(strict=True, default=GenericResult(), validate_default=True)

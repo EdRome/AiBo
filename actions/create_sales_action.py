@@ -46,6 +46,8 @@ class CreateSalesAction(Action):
 
                 if venta_id and detalle and total:
                     self._send_success_notification(memory, venta_id, detalle, total)
+                    # Limpieza de estado y retorno al menú
+                    return self._reset_sales_state(memory)
                 else:
                     logger.error(f"Falta información como venta_id, detalle y/o total")
                     send_whatsapp_message(memory.user_id, self.idioma.obtener('MENSAJE_ERROR_REGISTRO_VENTA'))
@@ -54,8 +56,7 @@ class CreateSalesAction(Action):
             logger.error(f"Error en CreateSalesAction: {e}")
             send_whatsapp_message(memory.user_id, self.idioma.obtener('MENSAJE_ERROR_REGISTRO_VENTA'))
 
-        # Limpieza de estado y retorno al menú
-        return self._reset_sales_state(memory)
+        return memory
 
     def _process_sales_text(self, memory, message):
         logger.info("2.1.3.1. Procesando texto de venta...")

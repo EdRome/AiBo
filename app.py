@@ -14,11 +14,11 @@ from data.db.messages import insert_message
 from data.models.sqlalchemy.messages import Message
 from data.db.memory import get_memory, insert_memory
 from data.models.memory.memory import Memory, GlobalMemory, LocalState, GenericResult
+from data.models.menu.etapa1 import Etapa1
 from data.db.sales import consulta_ventas_dia_actual
 from state_machines.utils import creditos_casi_agotados, creditos_agotados
 from whatsapp.messages.multiidioma import MultiIdioma
 from whatsapp.send_message.send_message import send_whatsapp_message, send_whatsapp_template
-from llm.core.summary_creator import create_summary
 
 app = Flask(__name__)
 CORS(app)
@@ -197,13 +197,7 @@ def message():
                 machine_stack=[], 
                 global_memory=GlobalMemory(), 
                 local_state=LocalState(
-                    etapa1=GenericResult(
-                        active=True,
-                        user_message=[body]
-                    ), 
-                    # etapa2=GenericResult(active=False), 
-                    # etapa3=GenericResult(active=False), 
-                    # etapa4=GenericResult(active=False)
+                    etapa1=Etapa1(active=True, user_message=[body])
                 ), 
                 last_interaction=datetime.now(),
                 task_name="")

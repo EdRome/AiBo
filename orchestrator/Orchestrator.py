@@ -3,6 +3,7 @@ from llm.core.entity_extractor import get_intention
 from whatsapp.messages.multiidioma import MultiIdioma
 from actions.create_sales_action import CreateSalesAction
 from actions.delete_sales_action import DeleteSalesAction
+from actions.onboarding_step1_action import OnboardingStep1
 from state_machines.Menu.Menu import MenuMachine
 
 logger = logging.getLogger(__name__)
@@ -17,7 +18,8 @@ class WorkflowOrchestrator:
         # Registro de acciones, cuando se agregue una nueva accion se debe agregar aqui
         self.actions = {
             'registrar_venta': CreateSalesAction(self.idioma),
-            'borrar_venta': DeleteSalesAction(self.idioma)
+            'borrar_venta': DeleteSalesAction(self.idioma),
+            'onboarding': OnboardingStep1(self.idioma)
         }
 
     def process(self, message: str = None, image: bytes = None):
@@ -37,7 +39,7 @@ class WorkflowOrchestrator:
         elif active_state and active_state != 'menu':
             active_obj = getattr(self.memory.local_state, active_state)
             self.memory = self.actions[active_obj.step].execute(self.memory, message, image)
-            self._reset_menu_buffer()
+            # self._reset_menu_buffer()
 
     def _get_effective_intent(self, active_state, message):
         """
