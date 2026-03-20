@@ -17,8 +17,8 @@ class CreateExpensesAction(Action):
         Orquesta el flujo de creación de gasto: extracción -> créditos -> DB -> notificación
         Args:
             memory: Objeto Memory que contiene el estado de la conversación
-            message: Mensaje de texto del usuario7y_
-            image: Imagen enviada por el usuari—:.-o
+            message: Mensaje de texto del usuario
+            image: Imagen enviada por el usuario
         Returns:
             Objeto Memory actualizado
         """

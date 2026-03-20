@@ -4,6 +4,7 @@ from whatsapp.messages.multiidioma import MultiIdioma
 from actions.create_sales_action import CreateSalesAction
 from actions.delete_sales_action import DeleteSalesAction
 from actions.onboarding_step1_action import OnboardingStep1
+from actions.create_remainders_action import CreateRemaindersAction
 from state_machines.Menu.Menu import MenuMachine
 
 logger = logging.getLogger(__name__)
@@ -17,9 +18,19 @@ class WorkflowOrchestrator:
 
         # Registro de acciones, cuando se agregue una nueva accion se debe agregar aqui
         self.actions = {
+            'registrar_recordatorio': CreateRemaindersAction(self.idioma),
             'registrar_venta': CreateSalesAction(self.idioma),
             'borrar_venta': DeleteSalesAction(self.idioma),
             'onboarding': OnboardingStep1(self.idioma)
+        }
+
+        self.action_map = {
+            'registrar_venta': self.menu_ui.on_enter_venta,
+            'registrar_recordatorio': self.menu_ui.on_enter_recordatorio,
+            'borrar_venta': self.menu_ui.on_enter_borrar_venta,
+            'menu': self.menu_ui.display_main_menu,
+            'registrar_inventario': self.menu_ui.show_feature_missing,
+            'otras_acciones': self.menu_ui.show_feature_missing
         }
 
     def process(self, message: str = None, image: bytes = None):
@@ -39,7 +50,7 @@ class WorkflowOrchestrator:
         elif active_state and active_state != 'menu':
             active_obj = getattr(self.memory.local_state, active_state)
             self.memory = self.actions[active_obj.step].execute(self.memory, message, image)
-            # self._reset_menu_buffer()
+            self._reset_menu_buffer()
 
     def _get_effective_intent(self, active_state, message):
         """
@@ -64,21 +75,7 @@ class WorkflowOrchestrator:
         Usa MenuMachine para mover al usuario entre pantallas según su intención.
         """
         logger.info("3. Manejando transiciones de estado y UI")
-        if intent == 'registrar_venta':
-            self.menu_ui.on_enter_venta()
-
-        elif intent == 'borrar_venta':
-            self.menu_ui.on_enter_borrar_venta()
-        
-        elif intent == 'menu':
-            self.menu_ui.display_main_menu()
-
-        elif intent in ['registrar_inventario', 'otras_acciones']:
-            self.menu_ui.show_feature_missing()
-
-        else:
-            # Si no entiende la intención, regresa al menú por seguridad
-            self.menu_ui.display_main_menu()
+        self.action_map.get(intent, self.menu_ui.display_main_menu)()
 
     def _reset_menu_buffer(self):
         self.memory.local_state.change_status('menu', True)

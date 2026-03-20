@@ -13,6 +13,7 @@ from orchestrator.Orchestrator import WorkflowOrchestrator
 from data.db.messages import insert_message
 from data.models.sqlalchemy.messages import Message
 from data.db.memory import get_memory, insert_memory
+from data.db.recordatorios import update_recordatorio, get_recordatorio_by_id
 from data.models.memory.memory import Memory, GlobalMemory, LocalState, GenericResult
 from data.models.menu.etapa1 import Etapa1
 from data.db.sales import consulta_ventas_dia_actual
@@ -27,6 +28,33 @@ logging.basicConfig(level=logging.INFO) # O logging.DEBUG para ver todo
 logger = logging.getLogger(__name__)
 
 logger.error("Versión de la aplicación: 2.0.1 alpha")
+
+@app.route('/remainder', methods=['POST'])
+def remainder():
+    try:
+        logger.info("Realizando notificación...")
+        data = request.get_json()
+        sender = data.get('sender')
+        title = data.get('remainder_title')
+        description = data.get('remainder_description')
+        date = data.get('remainder_date')
+        remainder_id = data.get('remainder_id')
+
+        send_whatsapp_message(sender, f"Recuerda que tienes una cita hoy a las {date} para {description}")
+
+        remainder = get_recordatorio_by_id(remainder_id)
+        remainder.estatus = 'ejecutado'
+        remainder.fecha_actualizacion = datetime.now()
+        update_recordatorio(remainder)
+
+    except Exception as e:
+        logger.error(f"Error al generar resumen de ventas: {e}")
+        send_whatsapp_message(sender, "Lo siento, hubo un error al procesar tu solicitud.")
+    
+    return make_response(jsonify({
+        'status': 'success',
+        'message': 'Recordatorio enviado correctamente'
+    }), 200)
 
 @app.route('/stripe_payment_status', methods=['POST'])
 def stripe_payment_status():
