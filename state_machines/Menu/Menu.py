@@ -48,6 +48,20 @@ class MenuMachine():
         mensaje = self.idioma.obtener("MENSAJE_CONFIRMACION_BORRAR_VENTA")
         send_whatsapp_template(self.memory.user_id, mensaje)
 
+    def on_enter_recordatorio(self):
+        """Inicia visualmente el flujo de recordatorio."""
+        logger.info("3.4. Iniciando flujo de recordatorio")
+        mensaje = self.idioma.obtener("MENSAJE_INICIO_RECORDATORIO")
+        send_whatsapp_template(
+            self.memory.user_id,
+            mensaje
+        )
+        
+        self.memory.local_state.change_status('recordatorios', True)
+        self.memory.local_state.recordatorios.aibo_message.append(mensaje)
+        self.memory.local_state.recordatorios.active = True
+        self.memory.local_state.recordatorios.step = "registrar_recordatorio"
+
     def show_feature_missing(self):
         """Notifica sobre funcionalidades aún no implementadas."""
         logger.info("3.4. Mostrando funcionalidad faltante")

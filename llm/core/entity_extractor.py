@@ -2,8 +2,9 @@ import os
 from unidecode import unidecode
 from langchain_google_genai import ChatGoogleGenerativeAI
 from config.config import MODEL_GEMINI_FLASH, ENTITY_TEMPERATURE, ENTITY_MAX_OUTPUT_TOKENS, ENTITY_THINKING_BUDGET
-from llm.prompt.entity_extractor import DATOS_NEGOCIO_EXTRACTION_PROMPT, EXTRAER_INTENCION_PROMPT
+from llm.prompt.entity_extractor import DATOS_NEGOCIO_EXTRACTION_PROMPT, EXTRAER_INTENCION_PROMPT, EXTRAER_RECORDATORIO_PROMPT
 from data.models.etapa1.negocio import EntityExtractor
+from data.models.menu.recordatorios import RecordatorioItemModelo
 from llm.prompt.utils import INSTRUCCION_IDIOMA, CONTEXTO_ASISTENTE
 
 model = ChatGoogleGenerativeAI(
@@ -43,8 +44,20 @@ def get_intention(message: str) -> str:
         return 'otras_acciones'
     elif unidecoded_message in ['menu']:
         return 'menu'
+    elif unidecoded_message in ['registrar recordatorio','nuevo recordatorio','registrar cita','programar cita','programar recordatorio']:
+        return 'registrar_recordatorio'
     else:
         return model.invoke(
             INSTRUCCION_IDIOMA + 
             EXTRAER_INTENCION_PROMPT.format(mensaje=unidecoded_message)
         ).content
+
+def extract_remainder_data(message: str) -> RecordatorioItemModelo:
+    """Extrae el titulo, fecha y descripcion del recordatorio"""
+    remainder_extractor = model.with_structured_output(RecordatorioItemModelo)
+    response = remainder_extractor.invoke(
+        CONTEXTO_ASISTENTE +
+        INSTRUCCION_IDIOMA + 
+        EXTRAER_RECORDATORIO_PROMPT.format(mensaje=message)
+    )
+    return response

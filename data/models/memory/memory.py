@@ -5,6 +5,7 @@ from data.models.etapa1.negocio import DatosNegocio
 from data.models.menu.venta import Venta
 from data.models.menu.inventario import Inventario
 from data.models.menu.etapa1 import Etapa1
+from data.models.menu.recordatorios import Recordatorio
 
 class GenericResult(BaseModel):
     aibo_message: List[str] = Field(strict=True, default=[], validate_default=True)
@@ -23,7 +24,8 @@ class LocalState(BaseModel):
     etapa1: Etapa1 = Field(strict=True, default=Etapa1(), validate_default=True)
     ventas: Venta = Field(strict=True, default=Venta(), validate_default=True)
     inventario: Inventario = Field(strict=True, default=Inventario(), validate_default=True)
-    menu: GenericResult = Field(strict=True, default=GenericResult(), validate_default=True)
+    # recordatorios: Recordatorio = Field(strict=True, default=Recordatorio(), validate_default=True)
+    menu: GenericResult = Field(strict=True, default=GenericResult(), validate_default=True),
 
     def get_active_state(self) -> str:
         for state_name in self.model_dump().keys():

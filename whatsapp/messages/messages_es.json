@@ -18,5 +18,8 @@
     "MENSAJE_CREDITOS_AGOTADOS": "HX4c8f647809c45ea5a79e132253bb3861",
     "MENSAJE_RESUMEN_VENTAS_FINAL_DIA": "Para cerrar el día, aquí está tu resumen de ventas del día de hoy:\n\n Vendiste un total de $ {venta_total} pesos\n De tu inventario, salieron {unidades_vendidas} unidades\n En un total de {num_ventas} ventas\n\nGracias por usar AiBo",
     "MENSAJE_ERROR_RESUMEN_VENTAS_FINAL_DIA": "Lo siento, hubo un error al generar el resumen de ventas",
-    "MENSAJE_FINAL_ONBOARDING": "Perfecto, ya tenemos lo necesario para ayudarte.\n\nMe presento, soy AiBo, tu asistente de negocio. Puedo ayudarte con tareas de registrar ventas, inventario y contestar algunas preguntas.\n\nEstoy recibiendo mejoras todo el tiempo, por lo que si tienes alguna duda o sugerencia, no dudes en decírmelo."
+    "MENSAJE_FINAL_ONBOARDING": "Perfecto, ya tenemos lo necesario para ayudarte.\n\nMe presento, soy AiBo, tu asistente de negocio. Puedo ayudarte con tareas de registrar ventas, inventario y contestar algunas preguntas.\n\nEstoy recibiendo mejoras todo el tiempo, por lo que si tienes alguna duda o sugerencia, no dudes en decírmelo.",
+    "MENSAJE_INICIO_RECORDATORIO": "¡Listo! Pásame los datos del recordatorio. 📝 Ej: \"Mañana cita con Mary a las 10am\" o \"Cita con Mary el 15 de marzo a las 1:30pm\"",
+    "MENSAJE_ERROR_REGISTRO_RECORDATORIO": "Ups! Tuvimos un error al registrar el recordatorio",
+    "MENSAJE_REGISTRO_RECORDATORIO_EXITOSO": "¡Listo! Quedó registrado tu recordatorio: {recordatorio}"
 }
