@@ -26,8 +26,9 @@ class OnboardingStep1(Action):
             nombre_emprendedor = memory.global_memory.datos_negocio.emprendedor.nombre
             nombre_negocio = memory.global_memory.datos_negocio.emprendedor.nombre_negocio
             giro = memory.global_memory.datos_negocio.negocio.giro
+            ubicacion = memory.global_memory.datos_negocio.negocio.ubicacion
             logger.info(f"Nombre del emprendedor {nombre_emprendedor} & nombre del negocio {nombre_negocio}")
-            logger.info(f"Giro del negocio {giro}")
+            logger.info(f"Giro del negocio {giro} & ubicacion {ubicacion}")
 
             if not nombre_negocio and nombre_emprendedor:
                 # Falta nombre del negocio
@@ -37,14 +38,18 @@ class OnboardingStep1(Action):
                 # Falta nombre del emprendedor
                 memory = self._pregunta_nombre_emprendedor(memory)
 
-            elif nombre_emprendedor and nombre_negocio and not giro:
-                # Falta el giro de la empresa
-                memory = self._pregunta_giro(memory)
+            # elif nombre_emprendedor and nombre_negocio and not giro:
+            #     # Falta el giro de la empresa
+            #     memory = self._pregunta_giro(memory)
+
+            elif nombre_emprendedor and nombre_negocio and giro and not ubicacion:
+                # Falta la ubicacion de la empresa
+                memory = self._pregunta_ubicacion(memory)
 
             elif not nombre_negocio and not nombre_emprendedor:
                 memory = self._mensaje_inicial(memory)
 
-            elif nombre_negocio and nombre_emprendedor and giro:
+            elif nombre_negocio and nombre_emprendedor and giro and ubicacion:
                 # Envía mensaje de validación
                 memory = self._final(memory)
                 return self._reset_etapa1_state(memory)
@@ -70,6 +75,9 @@ class OnboardingStep1(Action):
             
             if datos_extraidos.giro:
                 memory.global_memory.datos_negocio.negocio.giro = datos_extraidos.giro
+
+            if datos_extraidos.ubicacion:
+                memory.global_memory.datos_negocio.negocio.ubicacion = datos_extraidos.ubicacion
 
         return memory
 
@@ -111,6 +119,16 @@ class OnboardingStep1(Action):
         send_whatsapp_message(memory.user_id, mensaje)
         return self._add_aibo_message(memory, mensaje)
 
+    def _pregunta_ubicacion(self, memory):
+        """
+        Pregunta por la ubicación del negocio. Solo si ya tenemos el nombre del emprendedor, el negocio y el giro
+        """
+        mensaje = self.idioma.obtener(
+            "MENSAJE_FALTA_UBICACION"
+        )
+        send_whatsapp_message(memory.user_id, mensaje)
+        return self._add_aibo_message(memory, mensaje)
+
     def _final(self, memory):
         """
         Envia mensaje de validación final
@@ -122,20 +140,6 @@ class OnboardingStep1(Action):
     def _mensaje_inicial(self, memory):
         bienvenida = self.idioma.obtener("MENSAJE_BIENVENIDA_ETAPA1")
         solicitud_info = self.idioma.obtener("MENSAJE_SOLICITUD_INFO_ETAPA1")
-
-        # nombre_emprendedor = memory.global_memory.datos_negocio.emprendedor.nombre
-        # nombre_negocio = memory.global_memory.datos_negocio.emprendedor.nombre_negocio        
-
-        # if nombre_emprendedor and not nombre_negocio:
-        #     mensaje_reconocimiento_emprendedor = self.idioma.obtener("MENSAJE_RECONOCIMIENTO_ETAPA1",{'nombre':nombre_emprendedor})
-        #     mensaje = f"{bienvenida}\n\n{mensaje_reconocimiento_emprendedor}"
-        
-        # elif not nombre_emprendedor and nombre_negocio:
-        #     mensaje_reconocimiento_negocio = self.idioma.obtener("MENSAJE_RECONOCIMIENTO_NEGOCIO_ETAPA1",{'empresa':nombre_negocio})
-        #     mensaje = f"{bienvenida}\n\n{mensaje_reconocimiento_negocio.format(empresa=nombre_negocio)}"
-        
-        # else:
-        #     mensaje = f"{bienvenida}\n\n{solicitud_info}"
 
         mensaje = f"{bienvenida}\n\n{solicitud_info}"
 

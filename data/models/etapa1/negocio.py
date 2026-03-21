@@ -4,6 +4,7 @@ class Summary(BaseModel):
     summary: str = Field(strict=True, default="", validate_default=True)
     giro: str = Field(strict=True, default="", validate_default=True)
     descripcion: str = Field(strict=True, default="", validate_default=True)
+    ubicacion: str = Field(strict=True, default="", validate_default=True)
 
 class Emprendedor(BaseModel):
     nombre: str = Field(strict=True, default="", validate_default=True)
@@ -17,4 +18,5 @@ class DatosNegocio(BaseModel):
 class EntityExtractor(BaseModel):
     nombre: str = Field(strict=True, default="", validate_default=True)
     nombre_negocio: str = Field(strict=True, default="", validate_default=True)
-    giro: str = Field(strict=True, default="", validate_default=True)
+    giro: str = Field(strict=True, default="tendedor", validate_default=True)
+    ubicacion: str = Field(strict=True, default="", validate_default=True)

@@ -1,4 +1,4 @@
-DATOS_NEGOCIO_EXTRACTION_PROMPT = """Debes extraer el nombre de la persona, el nombre del negocio y el giro del negocio.
+DATOS_NEGOCIO_EXTRACTION_PROMPT = """Debes extraer el nombre de la persona, el nombre del negocio y la ubicación del negocio.
 Extrae únicamente la información que te solicito y nada más. Si no es posible extraer algún dato, deja el campo vacío.
 Este es el mensaje del usuario {mensaje}"""
 
