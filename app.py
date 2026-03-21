@@ -8,24 +8,53 @@ from cloud_task.cloud_task import schedule_inactivity_task, delete_inactivity_ta
 
 from state_machines.executor import StateMachineExecutor
 from state_machines.Onboarding.Etapa1 import Etapa1
-from state_machines.Menu.Menu import MenuMachine
+# from state_machines.Menu.Menu import MenuMachine
+from orchestrator.Orchestrator import WorkflowOrchestrator
 from data.db.messages import insert_message
 from data.models.sqlalchemy.messages import Message
 from data.db.memory import get_memory, insert_memory
+# from data.db.recordatorios import update_recordatorio, get_recordatorio_by_id
 from data.models.memory.memory import Memory, GlobalMemory, LocalState, GenericResult
+from data.models.menu.etapa1 import Etapa1
 from data.db.sales import consulta_ventas_dia_actual
 from state_machines.utils import creditos_casi_agotados, creditos_agotados
 from whatsapp.messages.multiidioma import MultiIdioma
 from whatsapp.send_message.send_message import send_whatsapp_message, send_whatsapp_template
-from llm.core.summary_creator import create_summary
 
 app = Flask(__name__)
 CORS(app)
 
+logging.basicConfig(level=logging.INFO) # O logging.DEBUG para ver todo
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 logger.error("Versión de la aplicación: 2.0.1 alpha")
+
+# @app.route('/remainder', methods=['POST'])
+# def remainder():
+#     try:
+#         logger.info("Realizando notificación...")
+#         data = request.get_json()
+#         sender = data.get('sender')
+#         title = data.get('remainder_title')
+#         description = data.get('remainder_description')
+#         date = data.get('remainder_date')
+#         remainder_id = data.get('remainder_id')
+
+#         send_whatsapp_message(sender, f"Recuerda que tienes una cita hoy a las {date} para {description}")
+
+#         remainder = get_recordatorio_by_id(remainder_id)
+#         remainder.estatus = 'ejecutado'
+#         remainder.fecha_actualizacion = datetime.now()
+#         update_recordatorio(remainder)
+
+#     except Exception as e:
+#         logger.error(f"Error al generar resumen de ventas: {e}")
+#         send_whatsapp_message(sender, "Lo siento, hubo un error al procesar tu solicitud.")
+    
+#     return make_response(jsonify({
+#         'status': 'success',
+#         'message': 'Recordatorio enviado correctamente'
+#     }), 200)
 
 @app.route('/stripe_payment_status', methods=['POST'])
 def stripe_payment_status():
@@ -86,78 +115,61 @@ def sales_summary():
 @app.route('/consume_message', methods=['POST'])
 def consume_message():
     """
-    Endpoint que procesa mensajes cuando se activa una tarea de inactividad.
-    Avanza la máquina de estados al siguiente estado si es posible.
+    Endpoint optimizado: Delega el procesamiento al WorkflowOrchestrator.
     """
     try:
-        logger.info("Consumiendo mensaje")
+        logger.info("1. Consumiendo mensaje con Orquestador")
         data = request.get_json()
         sender = data.get('sender')
 
         memory = get_memory(sender)
         if memory is None:
-            return make_response(jsonify({
-                'status': 'error',
-                'message': 'Error al obtener la memoria'
-            }), 500)
-        
-        # Eliminar tarea de inactividad
+            return make_response(jsonify({'status': 'error', 'message': 'Error al obtener la memoria'}), 500)
+
+        # Gestión de tareas de inactividad
         if memory.task_name:
             delete_inactivity_task(memory.task_name, sender)
         
         idioma = MultiIdioma(memory.global_memory.language)
         active_state = memory.local_state.get_active_state()
-        logger.info(f"Estado activo: {active_state}")
-        if active_state and active_state == 'etapa1':
-            # full_message = "\n".join(memory.local_state.etapa1.user_message)
-            full_message = memory.local_state.etapa1.get_full_user_message()
-            etapa1 = Etapa1.from_memory(memory, active_state, full_message)
-            if "Para ponerme en contexto, ¿me podrías contar en pocas palabras" in etapa1.ultimo_mensaje_enviado:
-                etapa1.memory.local_state.change_status("etapa1", False)
-            memory = etapa1.memory
 
-        elif active_state and active_state in ['menu','ventas','inventario']:
-            # full_message = "\n".join(getattr(memory.local_state, active_state).user_message)
-            image = None
-            full_message = None
+        # --- NUEVA LÓGICA DESACOPLADA ---
 
-            if active_state == 'ventas':
-                ventas_obj = memory.local_state.ventas
-                if ventas_obj.is_image():
-                    image = ventas_obj.get_image_content()
-                else:
-                    full_message = ventas_obj.get_full_user_message()
+        # 1. Recuperar el contenido (mensaje o imagen) acumulado en el estado actual
+        image = None
+        full_message = None
+
+        if active_state:
+            state_obj = getattr(memory.local_state, active_state)
+            if hasattr(state_obj, 'is_image') and state_obj.is_image():
+                image = state_obj.get_image_content()
             else:
-                full_message = getattr(memory.local_state, active_state).get_full_user_message()
+                full_message = state_obj.get_full_user_message()
 
-            menu = MenuMachine.from_memory(memory, active_state, full_message, image)
-            memory = menu.memory
 
-        elif not active_state:
-            if memory.global_memory.datos_negocio.negocio.summary == "":
-                full_message = "\n".join(memory.local_state.etapa1.user_message)
-                summary = create_summary(full_message)
-                memory.global_memory.datos_negocio.negocio = summary
+        logger.info(f"2.1. Contenido recuperado: {full_message}, {image}")
+        # 2. Ejecutar el Orquestador
+        # El orquestador ahora reemplaza las llamadas manuales a Etapa1 o MenuMachine
+        orchestrator = WorkflowOrchestrator(memory)
+        orchestrator.process(message=full_message, image=image)
 
-            memory.local_state.change_status('menu', True)
-            send_whatsapp_message(
-                sender, 
-                idioma.obtener("MENSAJE_FINAL_ONBOARDING")
-            )
-            send_whatsapp_template(sender, idioma.obtener("MENU_INICIO_RAPIDO"))
+        # Actualizamos la referencia de memoria tras el proceo
+        memory = orchestrator.memory
 
+        # --- FIN DE LA LÓGICA DESACOPLADA ---
+
+        # Persistencia y tareas post-procesamiento
         StateMachineExecutor.persist_memory(memory)
         schedule_sales_summary_task(sender)
+
         if creditos_casi_agotados(memory) or creditos_agotados(memory):
             send_whatsapp_template(sender, idioma.obtener("MENSAJE_CREDITOS_AGOTADOS"))
+    
     except Exception as e:
         logger.error(f"Error al consumir el mensaje: {e}")
-        send_whatsapp_message(sender, "Lo siento, hubo un error al consumir el mensaje")
+        send_whatsapp_message(sender, "Lo siento, hubo un error al procesar tu solicitud.")
 
-    return make_response(jsonify({
-        'status': 'success',
-        'message': 'Máquina de estados ejecutada correctamente'
-    }), 200)
+    return make_response(jsonify({'status': 'success', 'message': 'Procesamiento completado'}), 200)
 
 @app.route('/message', methods=['POST'])
 def message():
@@ -213,13 +225,7 @@ def message():
                 machine_stack=[], 
                 global_memory=GlobalMemory(), 
                 local_state=LocalState(
-                    etapa1=GenericResult(
-                        active=True,
-                        user_message=[body]
-                    ), 
-                    # etapa2=GenericResult(active=False), 
-                    # etapa3=GenericResult(active=False), 
-                    # etapa4=GenericResult(active=False)
+                    etapa1=Etapa1(active=True, user_message=[body])
                 ), 
                 last_interaction=datetime.now(),
                 task_name="")

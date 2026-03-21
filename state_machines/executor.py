@@ -8,8 +8,6 @@ from data.models.memory.memory import Memory, LocalState, GenericResult
 from data.db.memory import update_memory
 from state_machines.Onboarding.Etapa1 import Etapa1
 from state_machines.Menu.Menu import MenuMachine
-from state_machines.Menu.Sales import SalesMachine
-from state_machines.Menu.Inventory import InventoryMachine
 
 logger = logging.getLogger(__name__)
 
@@ -187,85 +185,6 @@ class StateMachineExecutor:
             # Reset/Init target context state?
             StateMachineExecutor._init_context_state(memory, next_ctx)
             
-        StateMachineExecutor.persist_memory(memory)
-        return memory
-
-    @staticmethod
-    def _execute_sales(memory: Memory, mode: str) -> Memory:
-        machine = SalesMachine(memory)
-        active_state = memory.local_state.ventas.step
-        
-        # Dispatch message to active state handler
-        if memory.local_state.ventas.user_message:
-            for msg in memory.local_state.ventas.user_message:
-                method_name = f"waiting_{active_state}"
-                handler = getattr(machine, method_name, None)
-                if handler:
-                    handler(msg)
-                else:
-                    logger.warning(f"No handler for {method_name}")
-            memory.local_state.ventas.user_message = [] # Clear buffer
-
-        # Check for context switch (finished/cancelled)
-        next_ctx = machine.get_next_context()
-        if next_ctx:
-            memory.active_context = next_ctx
-            StateMachineExecutor._init_context_state(memory, next_ctx)
-        else:
-            # Update step in memory if changed
-            # The machine methods update self.sales_state which IS active memory ref?
-            # Yes, machine.sales_state = memory.local_state.ventas
-            # But specific 'step' field might need implicit sync if machine changes it iteratively?
-            # SalesMachine updates state by calling methods. 
-            # But the 'step' field in Venta needs to be updated when transitioning?
-            # statemachine lib updates 'current_state'. 
-            # We need to sync machine.current_state.id back to memory.ventas.step
-            memory.local_state.ventas.step = machine.current_state.id
-
-        StateMachineExecutor.persist_memory(memory)
-        return memory
-
-    @staticmethod
-    def _execute_inventory(memory: Memory, mode: str) -> Memory:
-        machine = InventoryMachine(memory)
-        active_state = memory.local_state.inventario.step
-        
-        # Sync machine to active state BEFORE processing?
-        # statemachine starts at initial. We need to jump to active_state.
-        # But statemachine lib doesn't support forcing state easily without events.
-        # However, we can use the same trick as Etapa1 or just instantiate safely.
-        # Since our machines indicate flow, we might need to "replay" or just hack the current_state.
-        # For simplicity, since our states are linear, we can just set it if library allows?
-        # library.current_state is property.
-        # We can trigger transitions to reach state or set internal value.
-        # Hack: machine.current_state = machine.states[active_state] usually works in some libs but generic approach:
-        # We iterate to find path? Or just rely on 'step' being correct.
-        # Actually my SalesMachine logic relies on `on_enter`? 
-        # No, `on_enter` sends message.
-        # If we just restore state, we don't want `on_enter` to fire again unless we want it to?
-        # We should purely process message.
-        
-        # Override machine state manually for persistence restoration
-        for state in machine.states:
-            if state.id == active_state:
-                machine.current_state = state
-                break
-        
-        if memory.local_state.inventario.user_message:
-            for msg in memory.local_state.inventario.user_message:
-                method_name = f"waiting_{active_state}"
-                handler = getattr(machine, method_name, None)
-                if handler:
-                    handler(msg)
-            memory.local_state.inventario.user_message = []
-
-        next_ctx = machine.get_next_context()
-        if next_ctx:
-            memory.active_context = next_ctx
-            StateMachineExecutor._init_context_state(memory, next_ctx)
-        else:
-             memory.local_state.inventario.step = machine.current_state.id
-
         StateMachineExecutor.persist_memory(memory)
         return memory
 

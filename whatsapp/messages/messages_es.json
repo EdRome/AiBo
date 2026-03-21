@@ -1,9 +1,11 @@
 {
-    "MENSAJE_BIENVENIDA_ETAPA1": "¡Hola! Me da mucho gusto saludarte. Soy AiBo, tu asistente para explorar cómo puedes hacer crecer tu negocio con un poco de ayuda.",
-    "MENSAJE_SOLICITUD_INFO_ETAPA1": "Para poder ayudarte de manera más personalizada, ¿podrías decirme tu nombre y el nombre de tu negocio o proyecto?",
+    "MENSAJE_BIENVENIDA_ETAPA1": "¡Hola! Soy AiBo, especialista en gestión de tiendas. Voy a ayudarte a mejorar las ventas de tu tiendas y ganar más dinero 🤑",
+    "MENSAJE_SOLICITUD_INFO_ETAPA1": "Para poder ayudarte de manera más personalizada, ¿podrías decirme tu nombre y el nombre de tu tienda?",
     "MENSAJE_FALTA_NOMBRE_ETAPA1": "Perfecto, ¿y cómo te llamas?",
-    "MENSAJE_FALTA_NEGOCIO_ETAPA1": "Gracias {nombre}. ¿Y cómo se llama tu negocio o proyecto?",
-    "MENSAJE_VALIDACION_ETAPA1": "¡Mucho gusto, {nombre}! Un placer conocer de {empresa}.\n\nPara ponerme en contexto, ¿me podrías contar en pocas palabras **qué es lo principal que ofrecen o venden?** (por ejemplo: comida casera, servicios de plomería, ropa para bebés, cursos en línea).",
+    "MENSAJE_FALTA_NEGOCIO_ETAPA1": "Gracias {nombre}. ¿Cuál es el nombre de tu tienda?",
+    "MENSAJE_FALTA_UBICACION": "¿Donde se ubica tu tienda?",
+    "MENSAJE_VALIDACION_ETAPA1": "Muy bien, ya podemos comenzar.\n\nTrabajar conmigo es muy sencillo y tiene muchos beneficios, solo presiona el botón de *registrar venta* y anota lo que vendista\n\nCuando compres mercancia, presiona el botón de *registrar gasto*.\n\nAl final del día de daré un resumen de todo.\n\nCuanto más me uses, mejores beneficios podrás obtener, incluyendo descuentos y promociones de parte de las empresas con las que trabajamos.",
+    "MENSAJE_ERROR_ETAPA1": "Lo siento, hubo un error al momento de hacer tu registro en la plataforma.",
     "MENSAJE_RECONOCIMIENTO_ETAPA1": "¡Perfecto! Ya tengo tu nombre: {nombre}",
     "MENSAJE_RECONOCIMIENTO_NEGOCIO_ETAPA1": "¡Excelente! Entiendo que tu negocio se llama: {empresa}",
     "MENSAJE_FUNCIONALIDAD_FALTANTE": "Lo siento, pero esta funcionalidad no está disponible por el momento",
@@ -17,5 +19,5 @@
     "MENSAJE_CREDITOS_AGOTADOS": "HX4c8f647809c45ea5a79e132253bb3861",
     "MENSAJE_RESUMEN_VENTAS_FINAL_DIA": "Para cerrar el día, aquí está tu resumen de ventas del día de hoy:\n\n Vendiste un total de $ {venta_total} pesos\n De tu inventario, salieron {unidades_vendidas} unidades\n En un total de {num_ventas} ventas\n\nGracias por usar AiBo",
     "MENSAJE_ERROR_RESUMEN_VENTAS_FINAL_DIA": "Lo siento, hubo un error al generar el resumen de ventas",
-    "MENSAJE_FINAL_ONBOARDING": "Perfecto, ya tenemos lo necesario para ayudarte.\n\nMe presento, soy AiBo, tu asistente de negocio. Puedo ayudarte con tareas de registrar ventas, inventario y contestar algunas preguntas.\n\nEstoy recibiendo mejoras todo el tiempo, por lo que si tienes alguna duda o sugerencia, no dudes en decírmelo."
+    "MENSAJE_FINAL_ONBOARDING": "Muy bien, comencemos!\n\nTrabajar conmigo es muy sencillo y tiene muchos beneficios, solo presiona el botón de *registrar venta* y anota lo que vendista\n\nCuando compres mercancia, presiona el botón de *registrar gasto*\n\nAl final del día te daré un resumen de todo\n\nCuanto más me uses, mejores beneficios podrás obtener, incluyendo descuentos y promociones de parte de las empresas con las que trabajamos"
 }
