@@ -3,6 +3,7 @@ from pydantic import BaseModel, Field
 from typing import List
 from data.models.etapa1.negocio import DatosNegocio
 from data.models.menu.venta import Venta
+from data.models.menu.gastos import Gasto
 from data.models.menu.inventario import Inventario
 from data.models.menu.etapa1 import Etapa1
 
@@ -22,6 +23,7 @@ class GlobalMemory(BaseModel):
 class LocalState(BaseModel):
     etapa1: Etapa1 = Field(strict=True, default=Etapa1(), validate_default=True)
     ventas: Venta = Field(strict=True, default=Venta(), validate_default=True)
+    gastos: Gasto = Field(strict=True, default=Gasto(), validate_default=True)
     inventario: Inventario = Field(strict=True, default=Inventario(), validate_default=True)
     menu: GenericResult = Field(strict=True, default=GenericResult(), validate_default=True)
 
@@ -30,6 +32,13 @@ class LocalState(BaseModel):
             state_obj = getattr(self, state_name)
             if state_obj.active:
                 return state_name
+        return None
+
+    def get_active_state_obj(self):
+        for state_name in self.model_dump().keys():
+            state_obj = getattr(self, state_name)
+            if state_obj.active:
+                return state_obj
         return None
 
     def change_status(self, state_name: str, status: bool):
@@ -53,3 +62,7 @@ class Memory(BaseModel):
 
     def restar_credito(self, creditos: int):
         self.creditos_disponibles -= creditos
+
+    def append_message(self, message: str):
+        active_state = self.local_state.get_active_state_obj()
+        active_state.user_message.append(message)

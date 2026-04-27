@@ -39,6 +39,20 @@ class MenuMachine():
         self.memory.local_state.ventas.procesar_venta = True
         self.memory.local_state.ventas.step = "registrar_venta"
 
+    def on_enter_gasto(self):
+        """Inicia visualmente el flujo de gasto."""
+        logger.info("3.4. Iniciando flujo de gasto")
+        mensaje = self.idioma.obtener("MENSAJE_INICIO_GASTO")
+        send_whatsapp_message(
+            self.memory.user_id,
+            mensaje
+        )
+
+        self.memory.local_state.change_status('gastos', True)
+        self.memory.local_state.gastos.aibo_message.append(mensaje)
+        self.memory.local_state.gastos.procesar_gasto = True
+        self.memory.local_state.gastos.step = 'registrar_gasto'
+
     def on_enter_borrar_venta(self):
         """Inicia visualmente el flujo de borrado."""
         logger.info("3.3. Iniciando flujo de borrado")

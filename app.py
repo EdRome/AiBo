@@ -7,12 +7,12 @@ from flask import Flask, jsonify, request, make_response
 from cloud_task.cloud_task import schedule_inactivity_task, delete_inactivity_task, schedule_sales_summary_task
 
 from state_machines.executor import StateMachineExecutor
-from state_machines.Onboarding.Etapa1 import Etapa1
+# from state_machines.Onboarding.Etapa1 import Etapa1
 # from state_machines.Menu.Menu import MenuMachine
 from orchestrator.Orchestrator import WorkflowOrchestrator
 from data.db.messages import insert_message
 from data.models.sqlalchemy.messages import Message
-from data.db.memory import get_memory, insert_memory
+from data.db.memory import get_memory, insert_memory, update_memory
 # from data.db.recordatorios import update_recordatorio, get_recordatorio_by_id
 from data.models.memory.memory import Memory, GlobalMemory, LocalState, GenericResult
 from data.models.menu.etapa1 import Etapa1
@@ -29,32 +29,32 @@ logger = logging.getLogger(__name__)
 
 logger.error("Versión de la aplicación: 2.0.1 alpha")
 
-# @app.route('/remainder', methods=['POST'])
-# def remainder():
-#     try:
-#         logger.info("Realizando notificación...")
-#         data = request.get_json()
-#         sender = data.get('sender')
-#         title = data.get('remainder_title')
-#         description = data.get('remainder_description')
-#         date = data.get('remainder_date')
-#         remainder_id = data.get('remainder_id')
+@app.route('/remainder', methods=['POST'])
+def remainder():
+    try:
+        logger.info("Realizando notificación...")
+        data = request.get_json()
+        sender = data.get('sender')
+        title = data.get('remainder_title')
+        description = data.get('remainder_description')
+        date = data.get('remainder_date')
+        remainder_id = data.get('remainder_id')
 
-#         send_whatsapp_message(sender, f"Recuerda que tienes una cita hoy a las {date} para {description}")
+        send_whatsapp_message(sender, f"Recuerda que tienes una cita hoy a las {date} para {description}")
 
-#         remainder = get_recordatorio_by_id(remainder_id)
-#         remainder.estatus = 'ejecutado'
-#         remainder.fecha_actualizacion = datetime.now()
-#         update_recordatorio(remainder)
+        remainder = get_recordatorio_by_id(remainder_id)
+        remainder.estatus = 'ejecutado'
+        remainder.fecha_actualizacion = datetime.now()
+        update_recordatorio(remainder)
 
-#     except Exception as e:
-#         logger.error(f"Error al generar resumen de ventas: {e}")
-#         send_whatsapp_message(sender, "Lo siento, hubo un error al procesar tu solicitud.")
+    except Exception as e:
+        logger.error(f"Error al generar resumen de ventas: {e}")
+        send_whatsapp_message(sender, "Lo siento, hubo un error al procesar tu solicitud.")
     
-#     return make_response(jsonify({
-#         'status': 'success',
-#         'message': 'Recordatorio enviado correctamente'
-#     }), 200)
+    return make_response(jsonify({
+        'status': 'success',
+        'message': 'Recordatorio enviado correctamente'
+    }), 200)
 
 @app.route('/stripe_payment_status', methods=['POST'])
 def stripe_payment_status():
@@ -159,7 +159,7 @@ def consume_message():
         # --- FIN DE LA LÓGICA DESACOPLADA ---
 
         # Persistencia y tareas post-procesamiento
-        StateMachineExecutor.persist_memory(memory)
+        update_memory(memory)
         schedule_sales_summary_task(sender)
 
         if creditos_casi_agotados(memory) or creditos_agotados(memory):
@@ -233,12 +233,12 @@ def message():
             language = "es"
             memory.global_memory.language = language
             insert_memory(memory)
-            # etapa1 = Etapa1(sender, memory.global_memory.datos_negocio, body)
         else:
             # Actualizar memoria existente con el nuevo mensaje
-            memory = StateMachineExecutor.process_user_message(memory, body if not media_url else media_url)
+            # memory = StateMachineExecutor.process_user_message(memory, body if not media_url else media_url)
+            memory.append_message(body if not media_url else media_url)
             memory.last_interaction = datetime.now()
-            StateMachineExecutor.persist_memory(memory)
+            update_memory(memory)
 
         if memory.task_name != "":
             delete_inactivity_task(task_name=memory.task_name)
@@ -246,7 +246,7 @@ def message():
         # Programar tarea de inactividad
         task_id = schedule_inactivity_task(sender)
         memory.task_name = task_id
-        StateMachineExecutor.persist_memory(memory)
+        update_memory(memory)
         
         logger.info("Finalizando ejecución")
     except Exception as e:

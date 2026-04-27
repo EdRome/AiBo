@@ -39,6 +39,10 @@ def get_intention(message: str) -> str:
         return 'registrar_inventario'
     elif unidecoded_message in ['borrar inventario','borra inventario','borrar inventarios','borra inventarios']:
         return 'borrar_inventario'
+    elif unidecoded_message in ['registrar gasto','nuevo gasto']:
+        return 'registrar_gasto'
+    elif unidecoded_message in ['borrar gasto','borra gasto','borrar gastos','borra gastos']:
+        return 'borrar_gasto'
     elif unidecoded_message in ['otras acciones']:
         return 'otras_acciones'
     elif unidecoded_message in ['menu']:

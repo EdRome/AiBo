@@ -116,7 +116,6 @@ class StateMachineExecutor:
         # Agregar mensaje al estado activo
         state_obj = getattr(memory.local_state, active_state)
         state_obj.user_message.append(message)
-        # state_obj.user_message.append(message)
         
         return memory
     

@@ -19,5 +19,8 @@
     "MENSAJE_CREDITOS_AGOTADOS": "HX4c8f647809c45ea5a79e132253bb3861",
     "MENSAJE_RESUMEN_VENTAS_FINAL_DIA": "Para cerrar el día, aquí está tu resumen de ventas del día de hoy:\n\n Vendiste un total de $ {venta_total} pesos\n De tu inventario, salieron {unidades_vendidas} unidades\n En un total de {num_ventas} ventas\n\nGracias por usar AiBo",
     "MENSAJE_ERROR_RESUMEN_VENTAS_FINAL_DIA": "Lo siento, hubo un error al generar el resumen de ventas",
-    "MENSAJE_FINAL_ONBOARDING": "Muy bien, comencemos!\n\nTrabajar conmigo es muy sencillo y tiene muchos beneficios, solo presiona el botón de *registrar venta* y anota lo que vendista\n\nCuando compres mercancia, presiona el botón de *registrar gasto*\n\nAl final del día te daré un resumen de todo\n\nCuanto más me uses, mejores beneficios podrás obtener, incluyendo descuentos y promociones de parte de las empresas con las que trabajamos"
+    "MENSAJE_FINAL_ONBOARDING": "Muy bien, comencemos!\n\nTrabajar conmigo es muy sencillo y tiene muchos beneficios, solo presiona el botón de *registrar venta* y anota lo que vendista\n\nCuando compres mercancia, presiona el botón de *registrar gasto*\n\nAl final del día te daré un resumen de todo\n\nCuanto más me uses, mejores beneficios podrás obtener, incluyendo descuentos y promociones de parte de las empresas con las que trabajamos",
+    "MENSAJE_INICIO_GASTO": "¡Listo! Pásame los datos de tu compra. 📝 Ej: \"2 jugos 40\" o \"120 combo hamburguesa\"\nTambién puedes tomar una foto de tu ticket de compra.",
+    "MENSAJE_ERROR_REGISTRO_GASTO": "Ups! Tuvimos un error al registrar el gasto",
+    "MENSAJE_GASTO_REGISTRADO_CORRECTAMENTE": "HX323bfc55123e452171337336652caa3b"
 }

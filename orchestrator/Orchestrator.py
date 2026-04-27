@@ -4,7 +4,8 @@ from whatsapp.messages.multiidioma import MultiIdioma
 from actions.create_sales_action import CreateSalesAction
 from actions.delete_sales_action import DeleteSalesAction
 from actions.onboarding_step1_action import OnboardingStep1
-# from actions.create_remainders_action import CreateRemaindersAction
+from actions.create_expenses_action import CreateExpensesAction
+# from actions.delete_expenses_action import DeleteExpensesAction
 from state_machines.Menu.Menu import MenuMachine
 
 logger = logging.getLogger(__name__)
@@ -18,15 +19,16 @@ class WorkflowOrchestrator:
 
         # Registro de acciones, cuando se agregue una nueva accion se debe agregar aqui
         self.actions = {
-            # 'registrar_recordatorio': CreateRemaindersAction(self.idioma),
             'registrar_venta': CreateSalesAction(self.idioma),
             'borrar_venta': DeleteSalesAction(self.idioma),
+            'registrar_gasto': CreateExpensesAction(self.idioma),
+            # 'borrar_gasto': DeleteExpensesAction(self.idioma),
             'onboarding': OnboardingStep1(self.idioma)
         }
 
         self.action_map = {
+            'registrar_gasto': self.menu_ui.on_enter_gasto,
             'registrar_venta': self.menu_ui.on_enter_venta,
-            # 'registrar_recordatorio': self.menu_ui.on_enter_recordatorio,
             'borrar_venta': self.menu_ui.on_enter_borrar_venta,
             'menu': self.menu_ui.display_main_menu,
             'registrar_inventario': self.menu_ui.show_feature_missing,

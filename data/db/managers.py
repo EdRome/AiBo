@@ -2,14 +2,20 @@ import os
 import logging
 import sqlalchemy
 from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.pool import NullPool
 from google.cloud.sql.connector import Connector, IPTypes
 
 logger = logging.getLogger(__name__)
 
 INSTANCE_CONNECTION_NAME = os.environ.get("INSTANCE_CONNECTION_NAME")
+
+environment = os.environ.get("ENVIRONMENT", "supabase")
 DB_USER = os.environ.get("DB_USER")
 DB_PASS = os.environ.get("DB_PASS")
 DB_NAME = os.environ.get("DB_NAME")
+DB_PORT = os.environ.get("DB_PORT", "")
+DB_HOST = os.environ.get("DB_HOST", "")
+
 
 connector = Connector()
 
@@ -19,16 +25,23 @@ class DatabaseConnectionManager:
         logger.info("Inicializando gestor de conexiones a la base de datos")
         self.pool = None
         self.session = None
+        self.environ = environment
         self.create_pool()
         self.create_session()
 
     def create_pool(self):
         logger.info("Creando pool de conexiones a la base de datos")
-        self.pool = sqlalchemy.create_engine(
-            "postgresql+pg8000://",
-            creator =lambda: connector.connect(
-                INSTANCE_CONNECTION_NAME,
-                "pg8000",
+        if self.environ == 'supabase':
+            self.pool = sqlalchemy.create_engine(
+                f"postgresql+psycopg2://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}",
+                poolclass=NullPool
+            )
+        else:
+            self.pool = sqlalchemy.create_engine(
+                "postgresql+pg8000://",
+                creator =lambda: connector.connect(
+                    INSTANCE_CONNECTION_NAME,
+                    "pg8000",
                 user=DB_USER,
                 password=DB_PASS,
                 db=DB_NAME,

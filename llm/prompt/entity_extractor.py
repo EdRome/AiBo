@@ -3,6 +3,6 @@ Extrae únicamente la información que te solicito y nada más. Si no es posible
 Este es el mensaje del usuario {mensaje}"""
 
 EXTRAER_INTENCION_PROMPT = """Debes extraer la intención del mensaje del usuario.
-La intención puede ser 'registrar_venta', 'registrar_inventario', 'borrar_venta', 'borrar_inventario' o 'menu'. 
+La intención puede ser 'registrar_venta', 'registrar_inventario', 'borrar_venta', 'borrar_inventario', 'registrar_gasto', 'borrar_gasto' o 'menu'. 
 Por defecto, la intención es 'menu'.
 Regresa solamente la intención y nada más. Este es el mensaje {mensaje}"""

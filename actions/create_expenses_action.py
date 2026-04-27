@@ -1,9 +1,9 @@
 import json
 import logging
 from interfaces.action import Action
-from data.db.expenses import crear_gasto
+from data.db.expenses import create_gasto
 from llm.core.expenses_extractor import get_expenses_data
-from llm.core.ocr import ocr_v1
+from llm.core.ocr import ocr_gasto_v1
 from whatsapp.send_message.send_message import send_whatsapp_message, send_whatsapp_template
 
 logger = logging.getLogger(__name__)
@@ -35,14 +35,14 @@ class CreateExpensesAction(Action):
                     expenses_data = self._process_expenses_images(memory, image)
                     total = expenses_data.calcula_total()
                     detalle = expenses_data.output_detail()
-                    gasto_id = [crear_gasto(gasto) for gasto in expenses_data.gasto]
+                    gasto_id = [create_gasto(gasto) for gasto in expenses_data.gasto]
 
                 else:
                     logger.info("2.1.3. Leyendo texto")
                     expenses_data = self._process_expenses_text(memory, message)
                     total = expenses_data.total
                     detalle = expenses_data.output_detail()
-                    gasto_id = crear_gasto(expenses_data)
+                    gasto_id = create_gasto(expenses_data)
 
                 if gasto_id and detalle and total:
                     self._send_success_notification(memory, gasto_id, detalle, total)
@@ -70,7 +70,7 @@ class CreateExpensesAction(Action):
 
     def _process_expenses_images(self, memory, image):
         logger.info("2.1.2.1. Procesando imagen de gasto...")
-        expenses_data = ocr_v1(image)
+        expenses_data = ocr_gasto_v1(image)
 
         # Cálculo de créditos para procesamiento de imagen
         num_gastos = sum(len(expense.detalles) for expense in expenses_data.gasto)
@@ -90,7 +90,7 @@ class CreateExpensesAction(Action):
 
         send_whatsapp_template(
             memory.user_id,
-            self.idioma.obtener("MENSAJE_CONFIRMACION_GASTO"),
+            self.idioma.obtener("MENSAJE_GASTO_REGISTRADO_CORRECTAMENTE"),
             json.dumps({'lista_detalle': detalle, 'total': str(total)})
         )
 
