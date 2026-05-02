@@ -12,12 +12,18 @@
     "MENSAJE_VENTA_BORRADA_CORRECTAMENTE": "Venta borrada correctamente",
     "MENSAJE_ERROR_REGISTRO_VENTA": "Ups! Tuvimos un error al registrar la venta",
     "MENSAJE_SIN_VENTAS": "Hoy no se han registrado ventas, recuerda que puedes registrar ventas en el menú de ventas",
-    "MENU_INICIO_RAPIDO": "HX29fd90f715738b5b708c00502efb7205",
+    "MENU_INICIO_RAPIDO": "HX03404812237521a199c787f90cbfb170",
     "MENSAJE_INICIO_VENTA": "HX2b04a942176a811f7ece59180c52094b",
     "MENSAJE_CONFIRMACION_VENTA": "HXe36d34eeb4276d2cbf027c817e18e0df",
     "MENSAJE_CONFIRMACION_BORRAR_VENTA": "HXe4385a4bbdc1ca2637cd27598747c199",
     "MENSAJE_CREDITOS_AGOTADOS": "HX4c8f647809c45ea5a79e132253bb3861",
     "MENSAJE_RESUMEN_VENTAS_FINAL_DIA": "Para cerrar el día, aquí está tu resumen de ventas del día de hoy:\n\n Vendiste un total de $ {venta_total} pesos\n De tu inventario, salieron {unidades_vendidas} unidades\n En un total de {num_ventas} ventas\n\nGracias por usar AiBo",
     "MENSAJE_ERROR_RESUMEN_VENTAS_FINAL_DIA": "Lo siento, hubo un error al generar el resumen de ventas",
-    "MENSAJE_FINAL_ONBOARDING": "Muy bien, comencemos!\n\nTrabajar conmigo es muy sencillo y tiene muchos beneficios, solo presiona el botón de *registrar venta* y anota lo que vendista\n\nCuando compres mercancia, presiona el botón de *registrar gasto*\n\nAl final del día te daré un resumen de todo\n\nCuanto más me uses, mejores beneficios podrás obtener, incluyendo descuentos y promociones de parte de las empresas con las que trabajamos"
+    "MENSAJE_FINAL_ONBOARDING": "Muy bien, comencemos!\n\nTrabajar conmigo es muy sencillo y tiene muchos beneficios, solo presiona el botón de *registrar venta* y anota lo que vendista\n\nCuando compres mercancia, presiona el botón de *registrar gasto*\n\nAl final del día te daré un resumen de todo\n\nCuanto más me uses, mejores beneficios podrás obtener, incluyendo descuentos y promociones de parte de las empresas con las que trabajamos",
+    "MENSAJE_INICIO_GASTO": "¡Listo! Pásame los datos de tu compra. 📝 Ej: \"2 jugos 40\" o \"120 combo hamburguesa\"\nTambién puedes tomar una foto de tu ticket de compra.",
+    "MENSAJE_ERROR_REGISTRO_GASTO": "Ups! Tuvimos un error al registrar el gasto",
+    "MENSAJE_GASTO_REGISTRADO_CORRECTAMENTE": "HX323bfc55123e452171337336652caa3b",
+    "MENSAJE_INICIO_RECORDATORIO": "¡Listo! Pásame los datos de tu recordatorio. 📝 Ej: \"Mañana a las 10am comprar más galletas\"",
+    "MENSAJE_PROGRESO": "¡{accion_realizada}! 💰 +{exp} EXP.\n\nMisión:\n{nivel_actual}\n{barra_progreso}\n\nProgreso de misión:\n{progreso}\n\n¡Sigue así para blindar tu negocio y desbloquear el Nivel {siguiente_nivel}!",
+    "LEVEL_UP": "¡INCREIBLE! 🔥\nHas estado con una buena racha y subiste de nivel 😱\nAhora eres {nivel}"
 }

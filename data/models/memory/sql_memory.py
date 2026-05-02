@@ -1,8 +1,7 @@
 import os
-from typing import List
 from sqlalchemy import MetaData, Column, Integer, String, Float, DateTime, ForeignKey, Numeric, Enum
 from sqlalchemy.orm import relationship, DeclarativeBase, mapped_column
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import JSONB, ARRAY
 from datetime import datetime
 
 schema = os.environ.get("DB_SCHEMA")
@@ -13,11 +12,21 @@ class Base(DeclarativeBase):
 
 class Memory(Base):
     __tablename__ = "memory"
-    user_id = Column(String)
+    user_id = Column(String, primary_key=True)
     active_context = Column(String)
-    machine_stack = Column(List[String])
+    machine_stack = Column(ARRAY(String))
     global_memory = Column(JSONB)
     local_state = Column(JSONB)
     last_interaction = Column(DateTime)
     task_name = Column(String)
     creditos_disponibles = Column(Integer)
+
+class MemoriaEstados(Base):
+    __tablename__ = "memoria_estados"
+    user_id = Column(String, primary_key=True)
+    estado_actual = Column(String)
+    progreso_nivel = Column(Integer)
+    nivel_actual = Column(String)
+    contexto_json = Column(JSONB)
+    siguiente_nivel = Column(String)
+    misiones = Column(ARRAY(String))

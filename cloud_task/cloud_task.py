@@ -13,9 +13,10 @@ logger = logging.getLogger(__name__)
 project = 'gen-lang-client-0680947061'
 queue = 'whatsapp-consumption-reminder'
 location = 'us-central1'
-base_url = os.environ.get('CLOUD_TASK_BASE_URL')
+base_url = os.environ.get('CLOUD_TASK_BASE_URL', '')
 url = base_url + '/consume_message'
 url_summary = base_url + '/sales_summary'
+url_remainder = base_url + '/remainder'
 service_account = "aibo-sql@gen-lang-client-0680947061.iam.gserviceaccount.com"
 
 client = tasks_v2.CloudTasksClient()
@@ -42,6 +43,38 @@ def delete_inactivity_task(task_id: Optional[str] = None, phone_number: Optional
         client.delete_task(name=task_name)
     except Exception as e:
         logger.error(f"Error al eliminar la tarea de inactividad: {e}")
+
+def schedule_remainder_task(phone_number: str, fecha_recordatorio: datetime, message: str):
+    tz_cdmx = ZoneInfo("America/Mexico_City")
+    current_date = datetime.now(tz_cdmx)
+
+    timestamp = timestamp_pb2.Timestamp()
+    timestamp.FromDatetime(fecha_recordatorio)
+    
+    payload = {'sender': phone_number, 'message': message}
+
+    task_id = f"{uuid.uuid4()}-recordatorio-{phone_number}"
+    task_name = f"projects/{project}/locations/{location}/queues/{queue}/tasks/{task_id}"
+    task = {
+        'name': task_name,
+        'http_request': {
+            'http_method': tasks_v2.HttpMethod.POST,
+            'url': url_remainder,
+            'headers': {
+                'Content-Type': 'application/json'
+            },
+            'body': json.dumps(payload).encode(),
+            'oidc_token': {
+                'service_account_email': service_account,
+                'audience': url_remainder
+            }
+        },
+        'schedule_time': timestamp
+    }
+
+    response = client.create_task(request={'parent': parent, 'task': task})
+    return task_id
+
 
 def schedule_sales_summary_task(phone_number: str):
     tasks = list_scheduled_tasks()

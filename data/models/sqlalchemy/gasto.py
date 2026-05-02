@@ -10,33 +10,33 @@ metadata_obj = MetaData(schema=schema)
 class Base(DeclarativeBase):
     metadata = metadata_obj
 
-class VentaDB(Base):
-    __tablename__ = "ventas"
+class GastoDB(Base):
+    __tablename__ = "gastos"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     metodo_pago = Column(String, default="efectivo")
     total = Column(Float, default=0.0)
     fecha = Column(DateTime, default=datetime.utcnow)
-    
-    # Relación: al borrar la venta, se borran sus detalles (cascade)
-    detalles = relationship("DetalleVentaDB", back_populates="venta", cascade="all, delete-orphan")
+
+    # Relación: al borrar el gasto, se borran sus detalles (cascade)
+    detalles = relationship("DetalleGastoDB", back_populates="gasto", cascade="all, delete-orphan")
     phone_number = Column(String)
 
-class DetalleVentaDB(Base):
-    __tablename__ = "detalles_venta"
+class DetalleGastoDB(Base):
+    __tablename__ = "detalles_gasto"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    venta_id = Column(Integer, ForeignKey("ventas.id"))
+    gasto_id = Column(Integer, ForeignKey("gastos.id"))
     producto = Column(String)
     cantidad = Column(Integer)
     precio_unitario = Column(Float)
 
-    venta = relationship("VentaDB", back_populates="detalles")
+    gasto = relationship("GastoDB", back_populates="detalles")
 
-class SalesSummaryDB(Base):
-    __tablename__ = "sales_summary"
+class ExpenseSummaryDB(Base):
+    __tablename__ = "expense_summary"
 
     phone_number = Column(String, primary_key=True)
-    venta_total = Column(Float)
-    unidades_vendidas = Column(Integer)
-    num_ventas = Column(Integer)
+    gasto_total = Column(Float)
+    unidades_gastadas = Column(Integer)
+    num_gastos = Column(Integer)

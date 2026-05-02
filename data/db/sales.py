@@ -2,7 +2,7 @@ import logging
 from data.models.venta.RegistroVenta import VentaCreate
 from data.models.sqlalchemy.venta import VentaDB, DetalleVentaDB, SalesSummaryDB
 from data.db.utils import get_session
-from sqlalchemy import and_
+from sqlalchemy import and_, func
 
 logger = logging.getLogger(__name__)
 
@@ -10,7 +10,7 @@ db = get_session()
 
 def crear_venta(venta_data: VentaCreate):
 
-    logger.error(f"Venta: {venta_data.model_dump()}")
+    logger.info(f"Venta: {venta_data.model_dump()}")
 
     # 1. Crear la instancia de la venta (Cabecera)
     nueva_venta = VentaDB(
@@ -66,3 +66,15 @@ def consulta_ventas_dia_actual(phone_number: str):
         SalesSummaryDB.phone_number == phone_number
     ).first()
     return venta
+
+def get_sales_count(user_id: str) -> int:
+    try:
+        count = db.query(
+            func.count(VentaDB.id)
+        ).where(
+            VentaDB.phone_number == user_id
+        ).scalar()
+        return count or 0
+    except Exception as e:
+        logger.error(f"Error al recuperar todas las ventas: {e}")
+        return 0

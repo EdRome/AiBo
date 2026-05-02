@@ -3,6 +3,9 @@ from sqlalchemy import MetaData, Column, Integer, String, Float, DateTime, Forei
 from sqlalchemy.orm import relationship, DeclarativeBase, mapped_column
 from sqlalchemy.dialects.postgresql import JSONB
 from datetime import datetime
+from zoneinfo import ZoneInfo
+
+tz_cdmx = ZoneInfo("America/Mexico_City")
 
 schema = os.environ.get("DB_SCHEMA")
 metadata_obj = MetaData(schema=schema)
@@ -13,7 +16,7 @@ class Base(DeclarativeBase):
 class Message(Base):
     __tablename__ = "whatsapp"
     id = Column(Integer, primary_key=True, autoincrement=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now(tz_cdmx))
     sender = Column(String)
     receiver = Column(String)
     body = Column(String)

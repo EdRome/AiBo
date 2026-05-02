@@ -14,3 +14,5 @@ SQLAlchemy
 cloud-sql-python-connector[pg8000]
 google-cloud-tasks
 spacy
+psycopg2-binary
+supabase
