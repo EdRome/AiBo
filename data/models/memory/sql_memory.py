@@ -20,3 +20,13 @@ class Memory(Base):
     last_interaction = Column(DateTime)
     task_name = Column(String)
     creditos_disponibles = Column(Integer)
+
+class MemoriaEstados(Base):
+    __tablename__ = "memoria_estados"
+    user_id = Column(String, primary_key=True)
+    estado_actual = Column(String)
+    progreso_nivel = Column(Integer)
+    nivel_actual = Column(String)
+    contexto_json = Column(JSONB)
+    siguiente_nivel = Column(String)
+    misiones = Column(ARRAY(String))

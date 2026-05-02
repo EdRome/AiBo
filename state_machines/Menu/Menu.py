@@ -2,6 +2,7 @@ import logging
 from data.models.memory.memory import Memory
 from whatsapp.send_message.send_message import send_whatsapp_message, send_whatsapp_template
 from whatsapp.messages.multiidioma import MultiIdioma
+from utils import build_progress_bar
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +25,8 @@ class MenuMachine():
             self.idioma.obtener('MENU_INICIO_RAPIDO')
         )
         self.memory.local_state.change_status('menu', True)
+        self.memory.local_state.menu.user_message = []
+        self.memory.local_state.menu.aibo_message = []
 
     def on_enter_venta(self):
         """Inicia visualmente el flujo de venta."""
@@ -53,6 +56,27 @@ class MenuMachine():
         self.memory.local_state.gastos.procesar_gasto = True
         self.memory.local_state.gastos.step = 'registrar_gasto'
 
+    def on_enter_recordatorio(self):
+        """Inicia visualmente el flujo de recordatorio."""
+        logger.info("3.5. Iniciando flujo de recordatorio")
+        
+        send_whatsapp_message(
+            self.memory.user_id,
+            "AiBo_Preparado.webp",
+            is_image=True
+        )
+
+        mensaje = self.idioma.obtener("MENSAJE_INICIO_RECORDATORIO")
+        send_whatsapp_message(
+            self.memory.user_id,
+            mensaje
+        )
+
+        self.memory.local_state.change_status('recordatorio', True)
+        self.memory.local_state.recordatorio.aibo_message.append(mensaje)
+        self.memory.local_state.recordatorio.procesar_recordatorio = True
+        self.memory.local_state.recordatorio.step = 'crear_recordatorio'
+
     def on_enter_borrar_venta(self):
         """Inicia visualmente el flujo de borrado."""
         logger.info("3.3. Iniciando flujo de borrado")
@@ -61,6 +85,13 @@ class MenuMachine():
         self.memory.local_state.ventas.step = "borrar_venta"
         mensaje = self.idioma.obtener("MENSAJE_CONFIRMACION_BORRAR_VENTA")
         send_whatsapp_template(self.memory.user_id, mensaje)
+
+    def on_enter_onboarding(self):
+        """Iniciando visualmente el flujo de onboarding"""
+        # logger.ingo("Iniciando flujo de onboarding")
+        # self.memory.local_state.change_status('onboarding', True)
+        # self.memory.local_state.
+        pass
 
     def show_feature_missing(self):
         """Notifica sobre funcionalidades aún no implementadas."""
@@ -79,3 +110,35 @@ class MenuMachine():
             self.idioma.obtener(error_key)
         )
         self.display_main_menu()
+
+    def show_progress(self, memory_state, ultima_accion):
+        """Muestra un mensaje con el progreso del usuario."""
+        logger.info("3.6. Mostrando progreso")
+        barra = build_progress_bar(memory_state.progreso_nivel)
+        barra = barra + f" {memory_state.progreso_nivel}%"
+
+        send_whatsapp_message(
+            self.memory.user_id,
+            self.idioma.obtener(
+                "MENSAJE_PROGRESO", 
+                datos={
+                    "exp": 25,
+                    "accion_realizada": ultima_accion,
+                    "nivel_actual": memory_state.nivel_actual,
+                    "barra_progreso": barra,
+                    "progreso": "\n".join(memory_state.misiones),
+                    "siguiente_nivel": memory_state.siguiente_nivel
+                }
+            )
+        )
+
+    def show_next_level(self, memory_state):
+        send_whatsapp_message(
+            self.memory.user_id,
+            self.idioma.obtener(
+                "LEVEL_UP",
+                datos={
+                    "nivel": memory_state.nivel_actual
+                }
+            )
+        )

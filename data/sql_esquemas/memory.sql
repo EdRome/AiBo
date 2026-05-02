@@ -9,3 +9,18 @@ CREATE TABLE testing.memory (
     task_name TEXT,
     creditos_disponibles INT DEFAULT 20
 );
+
+CREATE TABLE testing.memoria_estados (
+  user_id TEXT PRIMARY KEY,
+  estado_actual TEXT,
+  progreso_nivel INTEGER,
+  nivel_actual TEXT,
+  contexto_json JSONB,
+  siguiente_nivel TEXT,
+  misiones TEXT[],
+
+  CONSTRAINT fk_user_id_memory
+    FOREIGN KEY (user_id)
+    REFERENCES testing.memory(user_id)
+    ON DELETE CASCADE
+);

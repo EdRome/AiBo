@@ -47,6 +47,8 @@ def get_intention(message: str) -> str:
         return 'otras_acciones'
     elif unidecoded_message in ['menu']:
         return 'menu'
+    elif unidecoded_message in ['registrar recordatorio','registro recordatorio','nuevo recordatorio','recordatorio']:
+        return 'registrar_recordatorio'
     else:
         return model.invoke(
             INSTRUCCION_IDIOMA + 

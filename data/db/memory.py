@@ -1,6 +1,7 @@
 import logging
 from data.models.memory.memory import Memory, GlobalMemory, LocalState
 from data.models.memory.sql_memory import Memory as MemorySQL
+from data.models.memory.sql_memory import MemoriaEstados as MemoriaEstadosSQL
 from data.db.utils import get_session
 from sqlalchemy import update
 
@@ -41,16 +42,18 @@ def get_memory(user_id: str) -> Memory:
     """
     try:
         memory_sql = db.query(MemorySQL).where(MemorySQL.user_id == user_id).first()
-        return Memory(
-            user_id=memory_sql.user_id,
-            active_context=memory_sql.active_context,
-            machine_stack=memory_sql.machine_stack,
-            global_memory=GlobalMemory(**memory_sql.global_memory),
-            local_state=LocalState(**memory_sql.local_state),
-            last_interaction=memory_sql.last_interaction,
-            task_name=memory_sql.task_name,
-            creditos_disponibles=memory_sql.creditos_disponibles
-        )
+        if memory_sql:
+            return Memory(
+                user_id=memory_sql.user_id,
+                active_context=memory_sql.active_context,
+                machine_stack=memory_sql.machine_stack,
+                global_memory=GlobalMemory(**memory_sql.global_memory),
+                local_state=LocalState(**memory_sql.local_state),
+                last_interaction=memory_sql.last_interaction,
+                task_name=memory_sql.task_name,
+                creditos_disponibles=memory_sql.creditos_disponibles
+            )
+        return None
     except Exception as e:
         logger.error(f"Error al obtener la memoria {e}")
         db.rollback()
@@ -80,5 +83,27 @@ def update_memory(memory: Memory) -> bool:
         return True
     except Exception as e:
         logger.error(f"Error al actualizar la memoria {e}")
+        db.rollback()
+        return False
+
+def get_memory_state(user_id: str):
+    try:
+        memoria_estado_sql = db.query(MemoriaEstadosSQL).where(MemoriaEstadosSQL.user_id == user_id).first()
+        if not memoria_estado_sql:
+            return MemoriaEstadosSQL(user_id = user_id)
+
+        return memoria_estado_sql
+    except Exception as e:
+        logger.error(f"Error al obtener la memoria de estados {e}")
+        db.rollback()
+        return None
+
+def insert_memory_state(memory_state):
+    try:
+        db.add(memory_state)
+        db.commit()
+        return True
+    except Exception as e:
+        logger.error(f"Error al insertar el memory_state {e}")
         db.rollback()
         return False

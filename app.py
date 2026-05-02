@@ -7,19 +7,17 @@ from flask import Flask, jsonify, request, make_response
 from cloud_task.cloud_task import schedule_inactivity_task, delete_inactivity_task, schedule_sales_summary_task
 
 from state_machines.executor import StateMachineExecutor
-# from state_machines.Onboarding.Etapa1 import Etapa1
-# from state_machines.Menu.Menu import MenuMachine
 from orchestrator.Orchestrator import WorkflowOrchestrator
 from data.db.messages import insert_message
 from data.models.sqlalchemy.messages import Message
 from data.db.memory import get_memory, insert_memory, update_memory
-# from data.db.recordatorios import update_recordatorio, get_recordatorio_by_id
 from data.models.memory.memory import Memory, GlobalMemory, LocalState, GenericResult
 from data.models.menu.etapa1 import Etapa1
 from data.db.sales import consulta_ventas_dia_actual
 from state_machines.utils import creditos_casi_agotados, creditos_agotados
 from whatsapp.messages.multiidioma import MultiIdioma
 from whatsapp.send_message.send_message import send_whatsapp_message, send_whatsapp_template
+from utils import retrieve_user_message_content
 
 app = Flask(__name__)
 CORS(app)
@@ -32,28 +30,30 @@ logger.error("Versión de la aplicación: 2.0.1 alpha")
 @app.route('/remainder', methods=['POST'])
 def remainder():
     try:
-        logger.info("Realizando notificación...")
+        logger.info("Enviando recordatorio")
         data = request.get_json()
         sender = data.get('sender')
-        title = data.get('remainder_title')
-        description = data.get('remainder_description')
-        date = data.get('remainder_date')
-        remainder_id = data.get('remainder_id')
+        message = data.get('message')
 
-        send_whatsapp_message(sender, f"Recuerda que tienes una cita hoy a las {date} para {description}")
+        memory = get_memory(sender)
 
-        remainder = get_recordatorio_by_id(remainder_id)
-        remainder.estatus = 'ejecutado'
-        remainder.fecha_actualizacion = datetime.now()
-        update_recordatorio(remainder)
+        send_whatsapp_message(
+            sender,
+            message
+        )
 
     except Exception as e:
         logger.error(f"Error al generar resumen de ventas: {e}")
-        send_whatsapp_message(sender, "Lo siento, hubo un error al procesar tu solicitud.")
-    
+        send_whatsapp_message(
+            sender,
+            "AiBo_Lo_Siento.webp",
+            is_image=True
+        )
+        send_whatsapp_message(sender, idioma.obtener("MENSAJE_ERROR_RESUMEN_VENTAS_FINAL_DIA"))
+
     return make_response(jsonify({
         'status': 'success',
-        'message': 'Recordatorio enviado correctamente'
+        'message': 'Resumen de ventas ejecutado correctamente'
     }), 200)
 
 @app.route('/stripe_payment_status', methods=['POST'])
@@ -91,7 +91,6 @@ def sales_summary():
                 sender,
                 idioma.obtener("MENSAJE_SIN_VENTAS")
             )
-            # send_whatsapp_message(sender, "Hoy no se han registrado ventas, recuerda que puedes registrar ventas en el menú de ventas")
         else:
             send_whatsapp_message(
                 sender, 
@@ -131,21 +130,12 @@ def consume_message():
             delete_inactivity_task(memory.task_name, sender)
         
         idioma = MultiIdioma(memory.global_memory.language)
-        active_state = memory.local_state.get_active_state()
 
         # --- NUEVA LÓGICA DESACOPLADA ---
 
         # 1. Recuperar el contenido (mensaje o imagen) acumulado en el estado actual
-        image = None
-        full_message = None
 
-        if active_state:
-            state_obj = getattr(memory.local_state, active_state)
-            if hasattr(state_obj, 'is_image') and state_obj.is_image():
-                image = state_obj.get_image_content()
-            else:
-                full_message = state_obj.get_full_user_message()
-
+        image, full_message = retrieve_user_message_content(memory)
 
         logger.info(f"2.1. Contenido recuperado: {full_message}, {image}")
         # 2. Ejecutar el Orquestador
@@ -224,22 +214,20 @@ def message():
                 active_context="Etapa1", 
                 machine_stack=[], 
                 global_memory=GlobalMemory(), 
-                local_state=LocalState(
-                    etapa1=Etapa1(active=True, user_message=[body])
-                ), 
+                local_state=LocalState(), 
                 last_interaction=datetime.now(),
                 task_name="")
             # language = language_analyzer(body)
             language = "es"
             memory.global_memory.language = language
+            memory.local_state.change_status('menu', True)
             insert_memory(memory)
-        else:
-            # Actualizar memoria existente con el nuevo mensaje
-            # memory = StateMachineExecutor.process_user_message(memory, body if not media_url else media_url)
-            memory.append_message(body if not media_url else media_url)
-            memory.last_interaction = datetime.now()
-            update_memory(memory)
-
+        # else:
+        # Actualizar memoria existente con el nuevo mensaje
+        logger.info(f"Estado activo {memory.local_state.get_active_state()}")
+        memory.append_message(body if not media_url else media_url)
+        memory.last_interaction = datetime.now()
+        
         if memory.task_name != "":
             delete_inactivity_task(task_name=memory.task_name)
 
@@ -251,7 +239,23 @@ def message():
         logger.info("Finalizando ejecución")
     except Exception as e:
         logger.error(f"Error al recibir el mensaje: {e}")
+        send_whatsapp_message(
+            sender,
+            "AiBo_Lo_Siento.webp",
+            is_image=True
+        )
         send_whatsapp_message(sender, "Lo siento, hubo un error al recibir el mensaje")
+
+    return make_response(jsonify({
+        'status': 'success'
+    }), 200)
+
+@app.route('/test', methods=['POST'])
+def test():
+    try:
+        pass
+    except Exception as e:
+        logger.error(e)
 
     return make_response(jsonify({
         'status': 'success'

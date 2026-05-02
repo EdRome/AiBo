@@ -5,6 +5,7 @@ from data.models.etapa1.negocio import DatosNegocio
 from data.models.menu.venta import Venta
 from data.models.menu.gastos import Gasto
 from data.models.menu.inventario import Inventario
+from data.models.menu.recordatorio import Recordatorio
 from data.models.menu.etapa1 import Etapa1
 
 class GenericResult(BaseModel):
@@ -25,7 +26,9 @@ class LocalState(BaseModel):
     ventas: Venta = Field(strict=True, default=Venta(), validate_default=True)
     gastos: Gasto = Field(strict=True, default=Gasto(), validate_default=True)
     inventario: Inventario = Field(strict=True, default=Inventario(), validate_default=True)
+    recordatorio: Recordatorio = Field(strict=True, default=Recordatorio(), validate_default=True)
     menu: GenericResult = Field(strict=True, default=GenericResult(), validate_default=True)
+    
 
     def get_active_state(self) -> str:
         for state_name in self.model_dump().keys():
@@ -65,4 +68,5 @@ class Memory(BaseModel):
 
     def append_message(self, message: str):
         active_state = self.local_state.get_active_state_obj()
-        active_state.user_message.append(message)
+        if active_state is not None:
+            active_state.user_message.append(message)
