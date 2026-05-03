@@ -62,9 +62,7 @@ class DeleteSalesAction(Action):
         memory.local_state.change_status('menu', True)
         memory.local_state.ventas.borrar_venta = False
         memory.local_state.ventas.user_message = []
-
-        send_whatsapp_template(
-            memory.user_id,
-            self.idioma.obtener("MENU_INICIO_RAPIDO")
-        )
+        memory.local_state.ventas.aibo_message = []
+        memory.local_state.menu.user_message = []
+        memory.local_state.ventas.step = "waiting_product"
         return memory

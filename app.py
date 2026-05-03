@@ -39,7 +39,7 @@ def remainder():
 
         send_whatsapp_message(
             sender,
-            message
+            "📣 RECORDATORIO:\n"+message
         )
 
     except Exception as e:
@@ -152,8 +152,8 @@ def consume_message():
         update_memory(memory)
         schedule_sales_summary_task(sender)
 
-        if creditos_casi_agotados(memory) or creditos_agotados(memory):
-            send_whatsapp_template(sender, idioma.obtener("MENSAJE_CREDITOS_AGOTADOS"))
+        # if creditos_casi_agotados(memory) or creditos_agotados(memory):
+        #     send_whatsapp_template(sender, idioma.obtener("MENSAJE_CREDITOS_AGOTADOS"))
     
     except Exception as e:
         logger.error(f"Error al consumir el mensaje: {e}")

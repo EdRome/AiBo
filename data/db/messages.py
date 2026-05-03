@@ -24,9 +24,8 @@ def insert_message(message: Message):
 
 def check_streak(user_id):
     try:
-        date_col = func.date(Message.created_at)
         dates = db.query(
-            date_col
+            func.date(Message.created_at)
         ).where(
             Message.sender == user_id
         ).distinct(
@@ -35,17 +34,18 @@ def check_streak(user_id):
 
         if not dates: return 0
 
+        dates = [date[0] for date in dates]
         dates.sort(reverse=True)
 
         streak = 0
-        today = datetime.now(tz_cdmx).date
+        today = datetime.now(tz_cdmx).date()
         current_check = today
 
         for date_row in dates:
-            if date_row[0] == current_check:
+            if date_row == current_check:
                 streak += 1
                 current_check -= timedelta(days=1)
-            elif date_row[0] > current_check:
+            elif date_row > current_check:
                 continue
             else:
                 break

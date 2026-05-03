@@ -51,10 +51,12 @@ class CreateSalesAction(Action):
                 else:
                     logger.error(f"Falta información como venta_id, detalle y/o total")
                     send_whatsapp_message(memory.user_id, self.idioma.obtener('MENSAJE_ERROR_REGISTRO_VENTA'))
+                    self._reset_sales_state()
 
         except Exception as e:
             logger.error(f"Error en CreateSalesAction: {e}")
             send_whatsapp_message(memory.user_id, self.idioma.obtener('MENSAJE_ERROR_REGISTRO_VENTA'))
+            self._reset_sales_state()
 
         return memory
 
@@ -101,5 +103,6 @@ class CreateSalesAction(Action):
         memory.local_state.ventas.procesar_venta = False
         memory.local_state.ventas.user_message = []
         memory.local_state.ventas.aibo_message = []
+        memory.local_state.menu.user_message = []
         memory.local_state.ventas.step = "waiting_product"
         return memory

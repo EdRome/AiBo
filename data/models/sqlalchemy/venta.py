@@ -4,7 +4,7 @@ from sqlalchemy.orm import relationship, DeclarativeBase
 from datetime import datetime
 
 # Definimos los metadatos con el esquema por defecto para todos los modelos
-schema = os.environ.get("DB_SCHEMA", "transactional")
+schema = os.environ.get("DB_SCHEMA")
 metadata_obj = MetaData(schema=schema)
 
 class Base(DeclarativeBase):
@@ -26,7 +26,7 @@ class DetalleVentaDB(Base):
     __tablename__ = "detalles_venta"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    venta_id = Column(Integer, ForeignKey("ventas.id"))
+    venta_id = Column(Integer, ForeignKey(f"{schema}.ventas.id"))
     producto = Column(String)
     cantidad = Column(Integer)
     precio_unitario = Column(Float)

@@ -31,7 +31,7 @@ def extract_business_and_name(message: str) -> EntityExtractor:
 def get_intention(message: str) -> str:
     """Obtiene la intención del usuario"""
     unidecoded_message = unidecode(message).strip().lower()
-    if unidecoded_message in ['registrar venta','nueva venta']:
+    if unidecoded_message in ['registrar venta','nueva venta','ventas']:
         return 'registrar_venta'
     if unidecoded_message in ['borrar venta','borrar ventas','borra venta','borra ventas']:
         return 'borrar_venta'
@@ -45,7 +45,7 @@ def get_intention(message: str) -> str:
         return 'borrar_gasto'
     elif unidecoded_message in ['otras acciones']:
         return 'otras_acciones'
-    elif unidecoded_message in ['menu']:
+    elif unidecoded_message in ['menu','.']:
         return 'menu'
     elif unidecoded_message in ['registrar recordatorio','registro recordatorio','nuevo recordatorio','recordatorio']:
         return 'registrar_recordatorio'
