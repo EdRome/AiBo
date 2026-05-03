@@ -14,7 +14,7 @@
     "MENSAJE_SIN_VENTAS": "Hoy no se han registrado ventas, recuerda que puedes registrar ventas en el menú de ventas",
     "MENU_INICIO_RAPIDO": "HX03404812237521a199c787f90cbfb170",
     "MENSAJE_INICIO_VENTA": "HX2b04a942176a811f7ece59180c52094b",
-    "MENSAJE_CONFIRMACION_VENTA": "HXe36d34eeb4276d2cbf027c817e18e0df",
+    "MENSAJE_CONFIRMACION_VENTA": "HXe4a5a5327d76d7a14ec8d1f07b281fde",
     "MENSAJE_CONFIRMACION_BORRAR_VENTA": "HXe4385a4bbdc1ca2637cd27598747c199",
     "MENSAJE_CREDITOS_AGOTADOS": "HX4c8f647809c45ea5a79e132253bb3861",
     "MENSAJE_RESUMEN_VENTAS_FINAL_DIA": "Para cerrar el día, aquí está tu resumen de ventas del día de hoy:\n\n Vendiste un total de $ {venta_total} pesos\n De tu inventario, salieron {unidades_vendidas} unidades\n En un total de {num_ventas} ventas\n\nGracias por usar AiBo",
