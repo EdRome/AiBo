@@ -18,3 +18,6 @@ class Recordatorio(RecordatorioBase):
     
     def calcula_delta(self):
         self.time_delta = self.created_at - self.fecha_recordatorio
+
+class ListaRecordatorios(BaseModel):
+    recordatorios: List[RecordatorioBase]

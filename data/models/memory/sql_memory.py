@@ -18,7 +18,7 @@ class Memory(Base):
     global_memory = Column(JSONB)
     local_state = Column(JSONB)
     last_interaction = Column(DateTime)
-    task_name = Column(String)
+    task_name = Column(String, default="")
     creditos_disponibles = Column(Integer)
 
 class MemoriaEstados(Base):

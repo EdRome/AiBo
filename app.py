@@ -27,6 +27,13 @@ logger = logging.getLogger(__name__)
 
 logger.error("Versión de la aplicación: 2.0.1 alpha")
 
+@app.route('/task_remainder', methods=['POST'])
+def task_remainder():
+    try:
+        pass
+    except Exception as e:
+        logger.error(f"Error al generar el recordatorio de actividad: {e}")
+
 @app.route('/remainder', methods=['POST'])
 def remainder():
     try:
@@ -252,8 +259,13 @@ def message():
 
 @app.route('/test', methods=['POST'])
 def test():
+    from orchestrator.Orchestrator import AiBoDirector
     try:
-        pass
+        form_data = request.form
+        body = form_data.get('Body', '')
+
+        memory = get_memory("5215528092514")
+        AiBoDirector(memory).execute_logic(body)
     except Exception as e:
         logger.error(e)
 
