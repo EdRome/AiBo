@@ -12,8 +12,9 @@ class MenuMachine():
     Actúa como la "Vista" en un patrón MVC simplificado
     """
 
-    def __init__(self, memory: Memory, idioma: MultiIdioma = None):
+    def __init__(self, memory: Memory, idioma: MultiIdioma = None, skip_messages = False):
         self.memory = memory
+        self.skip_messages = skip_messages
         # Si no se provee idioma, se recupera de la memoria global
         self.idioma = idioma if idioma else MultiIdioma(memory.global_memory.language)
 
@@ -31,11 +32,13 @@ class MenuMachine():
     def on_enter_venta(self):
         """Inicia visualmente el flujo de venta."""
         logger.info("3.2. Iniciando flujo de venta")
+
         mensaje = self.idioma.obtener("MENSAJE_INICIO_VENTA")
-        send_whatsapp_template(
-            self.memory.user_id,
-            mensaje
-        )
+        if not self.skip_messages:
+            send_whatsapp_template(
+                self.memory.user_id,
+                mensaje
+            )
         
         self.memory.local_state.change_status('ventas', True)
         self.memory.local_state.ventas.aibo_message.append(mensaje)
@@ -45,11 +48,13 @@ class MenuMachine():
     def on_enter_gasto(self):
         """Inicia visualmente el flujo de gasto."""
         logger.info("3.4. Iniciando flujo de gasto")
+
         mensaje = self.idioma.obtener("MENSAJE_INICIO_GASTO")
-        send_whatsapp_message(
-            self.memory.user_id,
-            mensaje
-        )
+        if not self.skip_messages:
+            send_whatsapp_message(
+                self.memory.user_id,
+                mensaje
+            )
 
         self.memory.local_state.change_status('gastos', True)
         self.memory.local_state.gastos.aibo_message.append(mensaje)
@@ -59,18 +64,18 @@ class MenuMachine():
     def on_enter_recordatorio(self):
         """Inicia visualmente el flujo de recordatorio."""
         logger.info("3.5. Iniciando flujo de recordatorio")
-        
-        send_whatsapp_message(
-            self.memory.user_id,
-            "AiBo_Preparado.webp",
-            is_image=True
-        )
+        mensaje = self.idioma.obtener("MENSAJE_INICIO_RECORDATORIO")        
+        if not self.skip_messages:
+            send_whatsapp_message(
+                self.memory.user_id,
+                "AiBo_Preparado.webp",
+                is_image=True
+            )
 
-        mensaje = self.idioma.obtener("MENSAJE_INICIO_RECORDATORIO")
-        send_whatsapp_message(
-            self.memory.user_id,
-            mensaje
-        )
+            send_whatsapp_message(
+                self.memory.user_id,
+                mensaje
+            )
 
         self.memory.local_state.change_status('recordatorio', True)
         self.memory.local_state.recordatorio.aibo_message.append(mensaje)
@@ -80,11 +85,13 @@ class MenuMachine():
     def on_enter_borrar_venta(self):
         """Inicia visualmente el flujo de borrado."""
         logger.info("3.3. Iniciando flujo de borrado")
+        mensaje = self.idioma.obtener("MENSAJE_CONFIRMACION_BORRAR_VENTA")
+        if not self.skip_messages:
+            send_whatsapp_template(self.memory.user_id, mensaje)
+
         self.memory.local_state.change_status('ventas', True)
         self.memory.local_state.ventas.borrar_venta = True
         self.memory.local_state.ventas.step = "borrar_venta"
-        mensaje = self.idioma.obtener("MENSAJE_CONFIRMACION_BORRAR_VENTA")
-        send_whatsapp_template(self.memory.user_id, mensaje)
 
     def on_enter_onboarding(self):
         """Iniciando visualmente el flujo de onboarding"""

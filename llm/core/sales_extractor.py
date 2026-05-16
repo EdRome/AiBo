@@ -2,7 +2,7 @@ import os
 from typing import List
 from langchain_google_genai import ChatGoogleGenerativeAI
 from config.config import MODEL_GEMINI_FLASH, ENTITY_TEMPERATURE, ENTITY_MAX_OUTPUT_TOKENS, ENTITY_THINKING_BUDGET
-from data.models.venta.RegistroVenta import VentaCreate, Venta
+from data.domains.ventas import VentaCreate, Venta
 from llm.prompt.sales_extractor import SALES_EXTRACTOR_PROMPT
 from llm.prompt.utils import INSTRUCCION_IDIOMA
 
@@ -43,9 +43,6 @@ def parse_venta(venta_create: VentaCreate, phone_number: str) -> Venta:
     return venta
 
 def get_image_content(image_data: bytes) -> Venta:
-    """
-    TODO: Hacer que el extractor procese bytes
-    """
     sales_extractor = model.with_structured_output(VentaCreate)
     venta_create = sales_extractor.invoke(
         INSTRUCCION_IDIOMA + 

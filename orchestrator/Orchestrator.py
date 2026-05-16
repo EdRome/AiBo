@@ -1,3 +1,4 @@
+import os
 import logging
 from llm.core.entity_extractor import get_intention
 from whatsapp.messages.multiidioma import MultiIdioma
@@ -8,11 +9,22 @@ from actions.create_expenses_action import CreateExpensesAction
 from actions.create_remainders_action import CreateRemaindersAction
 # from actions.delete_expenses_action import DeleteExpensesAction
 from state_machines.Menu.Menu import MenuMachine
+from langchain_google_genai import ChatGoogleGenerativeAI
+from .layers.llm import LLMLayer
 from .Gamification import GamificationManager
 from data.db.memory import insert_memory_state
 from whatsapp.send_message.send_message import send_whatsapp_template
+from config.config import MODEL_GEMINI_FLASH, ENTITY_TEMPERATURE, ENTITY_MAX_OUTPUT_TOKENS, ENTITY_THINKING_BUDGET
 
 logger = logging.getLogger(__name__)
+
+model = ChatGoogleGenerativeAI(
+    model=MODEL_GEMINI_FLASH, 
+    temperature=ENTITY_TEMPERATURE,
+    max_tokens=ENTITY_MAX_OUTPUT_TOKENS,
+    thinking_budget=ENTITY_THINKING_BUDGET,
+    api_key=os.environ.get("GEMINI_API_KEY")
+)
 
 class WorkflowOrchestrator:
 
@@ -78,7 +90,6 @@ class WorkflowOrchestrator:
                 self.memory.user_id,
                 self.idioma.obtener('MENU_INICIO_RAPIDO')
             )
-            
 
     def _get_effective_intent(self, active_state, message):
         """
@@ -109,3 +120,47 @@ class WorkflowOrchestrator:
         self.memory.local_state.change_status('menu', True)
         self.memory.local_state.menu.user_message = []
         self.memory.local_state.menu.aibo_message = []
+
+class AiBoDirector:
+
+    def __init__(self, memory):
+        self.memory = memory
+        self.idioma = self.idioma = MultiIdioma("es")
+
+        self.menu_ui = MenuMachine(self.memory, self.idioma, skip_messages=True)
+        self.llm_layer = LLMLayer(model_client=model)
+        self.actions = {
+            'registrar_venta': CreateSalesAction(self.idioma),
+            'borrar_venta': DeleteSalesAction(self.idioma),
+            'registrar_gasto': CreateExpensesAction(self.idioma),
+            'registrar_recordatorio': CreateRemaindersAction(self.idioma),
+            'onboarding': OnboardingStep1(self.idioma),
+            # 'consultar_venta: QuerySalesAction(self.idioma)
+            # 'registrar_expendiente': CreateExpedienteAction(self.idioma)
+        }
+
+        self.action_map = {
+            'registrar_gasto': self.menu_ui.on_enter_gasto,
+            'registrar_venta': self.menu_ui.on_enter_venta,
+            'borrar_venta': self.menu_ui.on_enter_borrar_venta,
+            'menu': self.menu_ui.display_main_menu,
+            'registrar_inventario': self.menu_ui.show_feature_missing,
+            'otras_acciones': self.menu_ui.show_feature_missing,
+            'registrar_recordatorio': self.menu_ui.on_enter_recordatorio,
+            'onboarding': self.menu_ui.on_enter_onboarding
+        }
+
+    def execute_logic(self, message):
+        final_results = []
+        execution_plan = self.llm_layer.split_tasks(message)
+
+        logger.info(execution_plan)
+
+        for task in execution_plan:
+            action_name = task['action']
+            phrase = task['phrase']
+
+            if action_name in self.action_map.keys() and action_name in self.actions.keys():
+                logger.info(f"Ejecutando accion {action_name}")
+                self.action_map[action_name]()
+                self.memory = self.actions[action_name].execute(self.memory, phrase, None)
