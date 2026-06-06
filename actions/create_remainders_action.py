@@ -13,16 +13,20 @@ class CreateRemaindersAction(Action):
     def __init__(self, idioma):
         self.idioma = idioma
 
-    def execute(self, memory, message: str, image: bytes = None):
+    def execute(self, memory, message: str, image: bytes = None, db_session=None):
         logger.info("Creando recordatorios")
         recordatorio_id = None
 
         try:
             if memory.local_state.recordatorio.procesar_recordatorio:
                 logger.info("2.2. Procesando información del recordatorio...")
-                recordatorio = self._process_remainder_text(memory, message)
-                recordatorio_id = insert_remainder(recordatorio)
-                self._send_success_notification(memory, recordatorio_id)
+                recordatorios = self._process_remainder_text(memory, message)
+                recordatorio_id = [insert_remainder(recordatorio) for recordatorio in recordatorios]
+
+                if len(recordatorio_id) == 1:
+                    self._send_success_notification(memory, recordatorio_id[0])
+                else:
+                    self._send_success_notification(memory, recordatorio_id)
         except Exception as e:
             logger.error(f"Error al crear recordatorios: {e}")
             send_whatsapp_message(memory.user_id, "Error al registrar el recordatorio")
@@ -39,14 +43,14 @@ class CreateRemaindersAction(Action):
         logger.info("2.2.1. Procesando texto del recordatorio...")
         try:
             remainder_data = get_remainder_data(message, memory.user_id)
-            logger.info(remainder_data.fecha_recordatorio)
-            task_id = schedule_remainder_task(
-                memory.user_id, 
-                remainder_data.fecha_recordatorio,
-                remainder_data.recordatorio
-            )
-            remainder_data.task_id = task_id
-            remainder_data.calcula_delta()
+            for recordatorio in remainder_data:
+                task_id = schedule_remainder_task(
+                    memory.user_id, 
+                    recordatorio.fecha_recordatorio,
+                    recordatorio.recordatorio
+                )
+                recordatorio.task_id = task_id
+                recordatorio.calcula_delta()
             
             return remainder_data
         except Exception as e:
@@ -61,7 +65,8 @@ class CreateRemaindersAction(Action):
             memory.local_state.recordatorio.id_ultimo_recordatorio = id_recodatorio
             memory.local_state.recordatorio.aibo_message.append(message)
             send_whatsapp_message(memory.user_id, "AiBo_Listo.webp", is_image=True)
-            send_whatsapp_message(memory.user_id, "Recordatorio registrado!")
+            # send_whatsapp_message(memory.user_id, "Recordatorio registrado!")
+            send_whatsapp_message(memory.user_id, f"He anotado tus {len(id_recodatorio)} recordatorios")
         except Exception as e:
             logger.error(f"Error enviando notificación de registro exitoso de recordatorio {e}")
 

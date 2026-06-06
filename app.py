@@ -4,20 +4,14 @@ import logging
 from flask_cors import CORS
 from datetime import datetime
 from flask import Flask, jsonify, request, make_response
-from cloud_task.cloud_task import schedule_inactivity_task, delete_inactivity_task, schedule_sales_summary_task
+from cloud_task.cloud_task import schedule_inactivity_task, delete_inactivity_task
 
-from state_machines.executor import StateMachineExecutor
-from orchestrator.Orchestrator import WorkflowOrchestrator
-from data.db.messages import insert_message
-from data.models.sqlalchemy.messages import Message
-from data.db.memory import get_memory, insert_memory, update_memory
-from data.models.memory.memory import Memory, GlobalMemory, LocalState, GenericResult
-from data.models.menu.etapa1 import Etapa1
-from data.db.sales import consulta_ventas_dia_actual
-from state_machines.utils import creditos_casi_agotados, creditos_agotados
-from whatsapp.messages.multiidioma import MultiIdioma
-from whatsapp.send_message.send_message import send_whatsapp_message, send_whatsapp_template
-from utils import retrieve_user_message_content
+from orchestrator.Orchestrator import AiBoDirector
+from data.domains.mensajes import insert_message, Message
+from data.domains.memoria import Memory, GlobalMemory, get_memory, insert_memory, update_memory
+from core.services.whatsapp import send_whatsapp_message
+from data.config.database import get_db, db_session
+from config.utils import get_current_date
 
 app = Flask(__name__)
 CORS(app)
@@ -25,7 +19,15 @@ CORS(app)
 logging.basicConfig(level=logging.INFO) # O logging.DEBUG para ver todo
 logger = logging.getLogger(__name__)
 
-logger.error("Versión de la aplicación: 2.0.1 alpha")
+logger.info("Versión de la aplicación: 4.0")
+
+@app.teardown_appcontext
+def shutdown_session(exception=None):
+    """
+    Este método se ejecuta automáticamente al finalizar CADA solicitud HTTP,
+    sin importar si fue exitosa o lanzó una excepción.
+    """
+    db_session.remove()  # Limpia la sesión del hilo y libera la conexión
 
 @app.route('/remainder', methods=['POST'])
 def remainder():
@@ -35,7 +37,7 @@ def remainder():
         sender = data.get('sender')
         message = data.get('message')
 
-        memory = get_memory(sender)
+        # memory = get_memory(sender)
 
         send_whatsapp_message(
             sender,
@@ -43,68 +45,8 @@ def remainder():
         )
 
     except Exception as e:
-        logger.error(f"Error al generar resumen de ventas: {e}")
-        send_whatsapp_message(
-            sender,
-            "AiBo_Lo_Siento.webp",
-            is_image=True
-        )
-        send_whatsapp_message(sender, idioma.obtener("MENSAJE_ERROR_RESUMEN_VENTAS_FINAL_DIA"))
-
-    return make_response(jsonify({
-        'status': 'success',
-        'message': 'Resumen de ventas ejecutado correctamente'
-    }), 200)
-
-@app.route('/stripe_payment_status', methods=['POST'])
-def stripe_payment_status():
-    try:
-        logger.error("Recibiendo estado de pago")
-        data = request.get_json()
-        body = data.get('body')
-        logger.error(body)
-        
-    except Exception as e:
-        logger.error(f'Error al recibir el estatus de pago {e}')
-        return make_response(jsonify({
-            'status': 'error',
-            'message': 'Error al recibir el estatus de pago'
-        }), 500)
-    
-    return make_response(jsonify({
-        'status': 'success',
-        'message': 'Estatus de pago recibido correctamente'
-    }), 200)
-
-@app.route('/sales_summary', methods=['POST'])
-def sales_summary():
-    try:
-        logger.info("Generando resumen de ventas")
-        data = request.get_json()
-        sender = data.get('sender')
-        memory = get_memory(sender)
-        idioma = MultiIdioma(memory.global_memory.language)
-
-        ventas_dia_actual = consulta_ventas_dia_actual(sender)
-        if ventas_dia_actual is None:
-            send_whatsapp_message(
-                sender,
-                idioma.obtener("MENSAJE_SIN_VENTAS")
-            )
-        else:
-            send_whatsapp_message(
-                sender, 
-                idioma.obtener("MENSAJE_RESUMEN_VENTAS_FINAL_DIA").format(
-                    venta_total=str(ventas_dia_actual.venta_total),
-                    unidades_vendidas=str(ventas_dia_actual.unidades_vendidas),
-                    num_ventas=str(ventas_dia_actual.num_ventas)
-                )
-            )
-
-        send_whatsapp_template(sender, idioma.obtener("MENU_INICIO_RAPIDO"))
-    except Exception as e:
-        logger.error(f"Error al generar resumen de ventas: {e}")
-        send_whatsapp_message(sender, idioma.obtener("MENSAJE_ERROR_RESUMEN_VENTAS_FINAL_DIA"))
+        logger.error(f"Error al enviar el recordatorio: {e}")
+        send_whatsapp_message(sender, "Lo siento, ocurrió un error al procesar el recordatorio")
 
     return make_response(jsonify({
         'status': 'success',
@@ -120,40 +62,23 @@ def consume_message():
         logger.info("1. Consumiendo mensaje con Orquestador")
         data = request.get_json()
         sender = data.get('sender')
+        current_date = get_current_date()
 
-        memory = get_memory(sender)
-        if memory is None:
-            return make_response(jsonify({'status': 'error', 'message': 'Error al obtener la memoria'}), 500)
+        with get_db() as db:
+            memory = get_memory(sender, db)
+            if memory is None:
+                return make_response(jsonify({'status': 'error', 'message': 'Error al obtener la memoria'}), 500)
 
-        # Gestión de tareas de inactividad
-        if memory.task_name:
-            delete_inactivity_task(memory.task_name, sender)
+            # Gestión de tareas de inactividad
+            if memory.task_name:
+                delete_inactivity_task(memory.task_name, sender)
+
         
-        idioma = MultiIdioma(memory.global_memory.language)
+            orchestador = AiBoDirector()
+            memory = orchestador.execute_logic(memory, current_date, db)
 
-        # --- NUEVA LÓGICA DESACOPLADA ---
-
-        # 1. Recuperar el contenido (mensaje o imagen) acumulado en el estado actual
-
-        image, full_message = retrieve_user_message_content(memory)
-
-        logger.info(f"2.1. Contenido recuperado: {full_message}, {image}")
-        # 2. Ejecutar el Orquestador
-        # El orquestador ahora reemplaza las llamadas manuales a Etapa1 o MenuMachine
-        orchestrator = WorkflowOrchestrator(memory)
-        orchestrator.process(message=full_message, image=image)
-
-        # Actualizamos la referencia de memoria tras el proceo
-        memory = orchestrator.memory
-
-        # --- FIN DE LA LÓGICA DESACOPLADA ---
-
-        # Persistencia y tareas post-procesamiento
-        update_memory(memory)
-        schedule_sales_summary_task(sender)
-
-        # if creditos_casi_agotados(memory) or creditos_agotados(memory):
-        #     send_whatsapp_template(sender, idioma.obtener("MENSAJE_CREDITOS_AGOTADOS"))
+            # Persistencia y tareas post-procesamiento
+            update_memory(memory, db)
     
     except Exception as e:
         logger.error(f"Error al consumir el mensaje: {e}")
@@ -173,14 +98,11 @@ def message():
         raw_from = form_data.get('From', '')
         raw_to = form_data.get('To', '')
         body = form_data.get('Body', '')
-        media_url = ''
-
-        # Inicia modificación para procesar imagenes
-        try:
-            media_url = form_data.get('MediaUrl0', '')
-        except:
-            pass
-        # Termina modificación para procesar imagenes
+        # Obtiene imagen
+        media_url = form_data.get('MediaUrl0', '')
+        # Detección de intención única
+        message_type = form_data.get('MessageType', '') # Detecta si fue una interacción por botones
+        intention = form_data.get('ButtonPayload', '') # Detecta la acción del botón
 
         # 3. Limpiar los strings (reemplazar 'whatsapp:+')
         sender = raw_from.replace('whatsapp:+', '')
@@ -197,53 +119,50 @@ def message():
             multimedia=media_url
         )
 
-        # confirm = insert_message(sender, receiver, body, data)
-        confirm = insert_message(message)
-        if confirm is None or not confirm:
-            return make_response(jsonify({
-                'status': 'error',
-                'message': 'Error al insertar el mensaje en la base de datos'
-            }), 500)
+        with get_db() as db:
+            confirm = insert_message(message, db)
+            if confirm is None or not confirm:
+                return make_response(jsonify({
+                    'status': 'error',
+                    'message': 'Error al insertar el mensaje en la base de datos'
+                }), 500)
 
-        # Obtener o crear memoria del usuario
-        memory = get_memory(sender)
-        if memory is None:
-            # Crear nueva memoria para usuario nuevo
-            memory = Memory(
-                user_id=sender, 
-                active_context="Etapa1", 
-                machine_stack=[], 
-                global_memory=GlobalMemory(), 
-                local_state=LocalState(), 
-                last_interaction=datetime.now(),
-                task_name="")
-            # language = language_analyzer(body)
-            language = "es"
-            memory.global_memory.language = language
-            memory.local_state.change_status('menu', True)
-            insert_memory(memory)
-        # else:
-        # Actualizar memoria existente con el nuevo mensaje
-        logger.info(f"Estado activo {memory.local_state.get_active_state()}")
-        memory.append_message(body if not media_url else media_url)
-        memory.last_interaction = datetime.now()
-        
-        if memory.task_name != "":
-            delete_inactivity_task(task_name=memory.task_name)
+            # Obtener o crear memoria del usuario
+            memory = get_memory(sender, db)
+            if memory is None:
+                # Crear nueva memoria para usuario nuevo
+                memory = Memory(
+                    user_id=sender, 
+                    active_context="bienvenida", 
+                    machine_stack=[], 
+                    global_memory=GlobalMemory(), 
+                    local_state={}, 
+                    last_interaction=datetime.now(),
+                    task_name=""
+                )
+                language = "es"
+                memory.global_memory.language = language
+                insert_memory(memory, db)
 
-        # Programar tarea de inactividad
-        task_id = schedule_inactivity_task(sender)
-        memory.task_name = task_id
-        update_memory(memory)
+            # Actualizar memoria existente con el nuevo mensaje
+            logger.info(f"Estado activo {memory.active_context}")
+            
+            memory.append_message(body if not media_url else media_url)
+            memory.update_last_interaction()
+            memory.update_message_type(message_type)
+            memory.update_intention(intention)
+
+            if memory.task_name != "":
+                delete_inactivity_task(task_name=memory.task_name)
+
+            # Programar tarea de inactividad
+            task_id = schedule_inactivity_task(sender)
+            memory.task_name = task_id
+            update_memory(memory, db)
         
         logger.info("Finalizando ejecución")
     except Exception as e:
         logger.error(f"Error al recibir el mensaje: {e}")
-        send_whatsapp_message(
-            sender,
-            "AiBo_Lo_Siento.webp",
-            is_image=True
-        )
         send_whatsapp_message(sender, "Lo siento, hubo un error al recibir el mensaje")
 
     return make_response(jsonify({
@@ -252,8 +171,13 @@ def message():
 
 @app.route('/test', methods=['POST'])
 def test():
+    from orchestrator.Orchestrator import AiBoDirector
     try:
-        pass
+        form_data = request.form
+        body = form_data.get('Body', '')
+
+        memory = get_memory("5215528092514")
+        AiBoDirector(memory).execute_logic(body)
     except Exception as e:
         logger.error(e)
 

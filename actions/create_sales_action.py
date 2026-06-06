@@ -1,7 +1,7 @@
 import json
 import logging
 from interfaces.action import Action
-from data.db.sales import crear_venta
+from data.domains.ventas import crear_venta
 from llm.core.sales_extractor import get_sales_data
 from llm.core.ocr import ocr_v1
 from whatsapp.send_message.send_message import send_whatsapp_message, send_whatsapp_template

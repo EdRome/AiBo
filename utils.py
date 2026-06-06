@@ -1,7 +1,13 @@
+import logging
+
+logger = logging.getLogger(__name__)
+
 def retrieve_user_message_content(memory):
     try:
         image = None
         full_message = None
+        message_type = None
+        intent = None
 
         active_state = memory.local_state.get_active_state()
 
@@ -12,10 +18,13 @@ def retrieve_user_message_content(memory):
             else:
                 full_message = state_obj.get_full_user_message()
             
-        return image, full_message
+            message_type = active_state.message_type
+            intent = active_state.intention
+            
+        return image, full_message, message_type, intent
     except Exception as e:
         logger.error(f"Error al recuperar el contenido del mensaje del usuario: {e}")
-        return None, None
+        return None, None, None, None
 
 def build_progress_bar(progreso: int):
     """La barra se compone de 10 barras

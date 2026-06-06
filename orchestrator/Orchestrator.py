@@ -1,111 +1,127 @@
+import os
 import logging
-from llm.core.entity_extractor import get_intention
-from whatsapp.messages.multiidioma import MultiIdioma
-from actions.create_sales_action import CreateSalesAction
-from actions.delete_sales_action import DeleteSalesAction
-from actions.onboarding_step1_action import OnboardingStep1
-from actions.create_expenses_action import CreateExpensesAction
-from actions.create_remainders_action import CreateRemaindersAction
-# from actions.delete_expenses_action import DeleteExpensesAction
-from state_machines.Menu.Menu import MenuMachine
+from data.domains.ventas import CreateSalesAction, QuerySalesAction
+from data.domains.recordatorios import CreateRemaindersAction, QueryRemaindersAction
+from data.domains.tutorial import Bienvenida
+from langchain_google_genai import ChatGoogleGenerativeAI
+from .layers.llm import LLMLayer
 from .Gamification import GamificationManager
-from data.db.memory import insert_memory_state
-from whatsapp.send_message.send_message import send_whatsapp_template
+from config.config import MODEL_GEMINI_FLASH_LATEST, ENTITY_TEMPERATURE, ENTITY_MAX_OUTPUT_TOKENS, ENTITY_THINKING_BUDGET
+from data.config.database import get_session
+from core.services.whatsapp import send_transition
+
 
 logger = logging.getLogger(__name__)
 
-class WorkflowOrchestrator:
+model = ChatGoogleGenerativeAI(
+    model=MODEL_GEMINI_FLASH_LATEST, 
+    temperature=ENTITY_TEMPERATURE,
+    max_tokens=ENTITY_MAX_OUTPUT_TOKENS,
+    thinking_budget=ENTITY_THINKING_BUDGET,
+    api_key=os.environ.get("GEMINI_API_KEY")
+)
 
-    ACTIONS = {
-        'registrar_venta': 'Venta',
-        'crear_recordatorio': 'Recordatorio',
-        'onboarding': 'Perfil'
-    }
+class AiBoDirector:
 
-    def __init__(self, memory):
-        self.memory = memory
-        self.idioma = MultiIdioma(memory.global_memory.language)
-
-        self.menu_ui = MenuMachine(self.memory, self.idioma)
-
-        # Registro de acciones, cuando se agregue una nueva accion se debe agregar aqui
+    def __init__(self):
+        self.content = {}
+        self.llm_layer = LLMLayer(model_client=model)
         self.actions = {
-            'registrar_venta': CreateSalesAction(self.idioma),
-            'borrar_venta': DeleteSalesAction(self.idioma),
-            'registrar_gasto': CreateExpensesAction(self.idioma),
-            'crear_recordatorio': CreateRemaindersAction(self.idioma),
-            # 'borrar_gasto': DeleteExpensesAction(self.idioma),
-            'onboarding': OnboardingStep1(self.idioma)
+            'venta': {
+                'registrar_venta': CreateSalesAction(),
+                'consultar_venta': QuerySalesAction(),
+            },
+            'recordatorios': {
+                'registrar_recordatorio': CreateRemaindersAction(),
+                'consultar_recordatorio': QueryRemaindersAction(),
+            },
+            'bienvenida': Bienvenida()
         }
-
-        self.action_map = {
-            'registrar_gasto': self.menu_ui.on_enter_gasto,
-            'registrar_venta': self.menu_ui.on_enter_venta,
-            'borrar_venta': self.menu_ui.on_enter_borrar_venta,
-            'menu': self.menu_ui.display_main_menu,
-            'registrar_inventario': self.menu_ui.show_feature_missing,
-            'otras_acciones': self.menu_ui.show_feature_missing,
-            'registrar_recordatorio': self.menu_ui.on_enter_recordatorio,
-            'onboarding': self.menu_ui.on_enter_onboarding
-        }
-
-    def process(self, message: str = None, image: bytes = None):
+        # self.db_session = get_session()
+        
+    def execute_logic(self, memory, current_date, db_session):
         """
-        Punto de entrada principal para procesar cualquier mensaje entrante
-        """
-        # 1. Obtener estado activo
-        active_state = self.memory.local_state.get_active_state()
+        IF message_type == 'interactive' THEN es un mensaje por botón
+        IF message_type == 'text' THEN es mensaje de texto libre
 
-        if (active_state and active_state == 'menu') or not active_state:
-            # 1.1 Determina la intención del usuario. Solo si estoy en el menu o no hay estado activo
-            intent = self._get_effective_intent(active_state, message)
-            # 1.2 Manejar transiciones de estado y UI (MenuMachine)
-            self._handle_ui_transitions(intent)
+        IF message_type == 'interactive' THEN detecta intención por variable intention
+        IF message_type == 'text' THEN detecta intención por LLM
+
+        [Aquí no es necesario pasar por el LLM de planeación porque conoces la intención, conoces la acción (después dem mensaje de transición)]
+        IF message_type == 'interactive' THEN tratalo como tutorial (intención -> transición -> acción -> respuesta)
+        IF message_type == 'text' THEN tratalo como mundo abierto (intención -> planeación -> acción -> respuesta)
+        """
+
+        full_message = memory.get_message()
+        intention = memory.get_intention()
+        message_type = memory.get_message_type()
+
+        # Es una acción rápida del menú
+        if message_type == 'interactive' and intention in self.actions:
+            memory.active_context = intention # Almacena en la BD el estado que debe activarse
+            logger.info(f"Este es un mensaje de transición para determinar el subestado del contexto {memory.active_context}")
+            send_transition(db_session, memory.user_id, memory.active_context, "transicion")
+
+        # Es la respuesta a la acción rápida del menú
+        elif message_type == 'text' and memory.active_context in self.actions: 
+            # Determina el subestado de ejecución
+            transicion, mensaje, memory = self._single_execution(full_message, memory.active_context, memory, db_session, current_date)
+            send_transition(db_session, memory.user_id, memory.active_context, transicion, **mensaje)
+            if not (memory.active_context == 'bienvenida' and transicion in ["transicion","transicion_proactiva","pide_nuevamente","mision_ok"]):
+                send_transition(db_session, memory.user_id, "IDLE", None)
+                memory.reset_active_context()
+
+        elif message_type == 'text' and intention == "":
+            # Envia el menú
+            send_transition(db_session, memory.user_id, "IDLE", None)
+
+        else:
+            # TODO: No está implementada esta acción
+            logger.warning(f"Intención no implementada o entendida\n{memory.active_context}\n{message_type}\n{intention}")
+
+        return memory
+
+    def _single_execution(self, message, intention, memory, db_session, current_date):
+        logger.info("Ejecutando acción simple")
+        if intention == "bienvenida":
+            logger.info("Acción bienvenida")
+            action = self.actions[intention]
+            action_res = action.execute(memory, message, db_session=db_session, current_date=current_date)
+        else:
+            subintention = self.llm_layer.identify_action(message, intention) # Identifica el tipo de action que va a ejecutar
+            logger.info(f"Acción {subintention}")
+
+            action = self.actions[intention][subintention]
+            action_res = action.execute(memory, message, db_session=db_session, current_date=current_date)
+
+        memory = action_res.get('memory', memory)
+        mensaje = action_res.get('mensaje', {})
+        transicion = action_res.get('transicion', '')
+
+        return transicion, mensaje, memory
+
+    # def _plan_and_execute(self, message):
+    #     execution_results = []
+    #     execution_plan = self.llm_layer.split_tasks(message)
+    #     actions_aplanado = {
+    #         sub_clave: valor 
+    #         for llave_padre, sub_diccionario in self.actions.items() 
+    #         for sub_clave, valor in sub_diccionario.items()
+    #     }
+
+    #     for task in execution_plan:
+    #         action_name = task['action']
+    #         phrase = task['phrase']
+
+    #         logger.info(f"Ejecutando accion {action_name}")
+    #         action = actions_aplanado[action_name]
+    #         action_res = action.execute(self.memory, phrase, None)
+    #         self.memory = action_res.get('memory', self.memory)
+    #         mensaje = action_res.get('mensaje', '')
+
+    #         execution_results.append(mensaje)
+    #     return execution_results
     
-        # 2. Ejecutar el Action correspondiente
-        elif active_state and active_state != 'menu':
-            active_obj = getattr(self.memory.local_state, active_state)
-            self.memory = self.actions[active_obj.step].execute(self.memory, message, image)
-            memory_state, tipo_mensaje = GamificationManager.manage_progress(self.memory)
-            nombre_active_object = WorkflowOrchestrator.ACTIONS.get(active_obj.step, "ERROR")
-            if tipo_mensaje == 'MISSION_COMPLETED':
-                self.menu_ui.show_progress(memory_state, nombre_active_object)
-            elif tipo_mensaje == "LEVEL_UP":
-                self.menu_ui.show_progress(memory_state, nombre_active_object)
+    # def _prepara_respuesta(self, mensajes):
+    #     pass
 
-            insert_memory_state(memory_state)
-            send_whatsapp_template(
-                self.memory.user_id,
-                self.idioma.obtener('MENU_INICIO_RAPIDO')
-            )
-            
-
-    def _get_effective_intent(self, active_state, message):
-        """
-        Si el usuario está en un estado específico (ej. ventas), mantenemos ese flujo.
-        Si está en el menú o estado neutro, extraemos la intención con LLM.
-        """
-        # Si está en el menú, usamos el LLM para saber a dónde quiere ir
-        if message:
-            return get_intention(message)
-
-        return 'menu'
-
-    def _should_execute_action(self, active_state):
-        """
-        Valida si ya estamos en un estado de procesamiento.
-        Por ejemplo, si el estado es 'ventas', el Action ya puede ejecutarse.
-        """
-        return active_state == 'ventas'
-
-    def _handle_ui_transitions(self, intent):
-        """
-        Usa MenuMachine para mover al usuario entre pantallas según su intención.
-        """
-        logger.info("3. Manejando transiciones de estado y UI")
-        self.action_map.get(intent, self.menu_ui.display_main_menu)()
-
-    def _reset_menu_buffer(self):
-        self.memory.local_state.change_status('menu', True)
-        self.memory.local_state.menu.user_message = []
-        self.memory.local_state.menu.aibo_message = []

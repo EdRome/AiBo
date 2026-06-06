@@ -153,3 +153,9 @@ def schedule_inactivity_task(phone_number: str):
 
     response = client.create_task(request={'parent': parent, 'task': task})
     return task_id
+
+def delete_remainder_activity(task_name):
+    try:
+        client.delete_task(name=task_name)
+    except Exceptio as e:
+        logger.error(f"Error al eliminar la tarea de recordatorio de actividad: {e}")
