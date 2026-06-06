@@ -6,7 +6,7 @@ WORKDIR /app
 
 COPY requirements.txt requirements.txt
 RUN pip install -r requirements.txt --no-cache-dir
-RUN python -m spacy download es_core_news_sm
+# RUN python -m spacy download es_core_news_sm
 
 COPY . .
 

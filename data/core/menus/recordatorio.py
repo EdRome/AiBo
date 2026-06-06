@@ -12,6 +12,9 @@ class Recordatorio(BaseModel):
 
     id_ultimo_recordatorio: int|List[int] = Field(default=0)
 
+    message_type: str
+    intention: str
+
     def is_waiting_remainder(self) -> bool:
         return self.step == "waiting_remainder"
     

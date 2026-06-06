@@ -1,7 +1,8 @@
 import os
 import logging
 import sqlalchemy
-from sqlalchemy.orm import Session, sessionmaker
+from contextlib import contextmanager
+from sqlalchemy.orm import Session, sessionmaker, scoped_session
 from sqlalchemy.pool import NullPool
 from google.cloud.sql.connector import Connector, IPTypes
 
@@ -53,7 +54,26 @@ class DatabaseConnectionManager:
         SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=self.pool)
         self.session = SessionLocal()
 
-_db_manager = DatabaseConnectionManager()
+# _db_manager = DatabaseConnectionManager()
+engine = sqlalchemy.create_engine(
+    f"postgresql+psycopg2://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}",
+    pool_size=20,
+    max_overflow=10,
+    pool_timeout=30,
+    pool_recycle=1800
+)
+
+session_factory = sessionmaker(bind=engine)
+
+db_session = scoped_session(session_factory)
+
+@contextmanager
+def get_db():
+    db = db_session
+    try:
+        yield db
+    except:
+        db_session.remove()
 
 def get_pool():
     """

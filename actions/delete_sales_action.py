@@ -1,7 +1,7 @@
 import logging
 from interfaces.action import Action
 from llm.core.entity_extractor import confirm_delete
-from data.db.sales import borrar_venta
+from data.domains.ventas import borrar_venta
 from whatsapp.send_message.send_message import send_whatsapp_message, send_whatsapp_template
 
 logger = logging.getLogger(__name__)

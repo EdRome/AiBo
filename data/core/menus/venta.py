@@ -21,6 +21,9 @@ class Venta(BaseModel):
 
     id_ultima_venta: int = Field(default=0)
 
+    message_type: str
+    intention: str
+
     def is_image(self):
         for message in self.user_message:
             parsed_url = urlparse(message)

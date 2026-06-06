@@ -2,6 +2,7 @@
 
 # Modelos
 MODEL_GEMINI_FLASH = "gemini-2.5-flash"
+MODEL_GEMINI_FLASH_LATEST = "gemini-3.1-flash-lite"
 MODEL_EMBEDDING = "text-embedding-004"
 
 # Configuración de generación de contenido

@@ -13,7 +13,7 @@ class CreateRemaindersAction(Action):
     def __init__(self, idioma):
         self.idioma = idioma
 
-    def execute(self, memory, message: str, image: bytes = None):
+    def execute(self, memory, message: str, image: bytes = None, db_session=None):
         logger.info("Creando recordatorios")
         recordatorio_id = None
 

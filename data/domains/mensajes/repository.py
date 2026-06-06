@@ -3,14 +3,14 @@ import json
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from sqlalchemy import func
-from data.config import get_session
+from data.db.utils import get_session
 from .models import Message
 
 logger = logging.getLogger(__name__)
 tz_cdmx = ZoneInfo("America/Mexico_City")
-db = get_session()
 
-def insert_message(message: Message):
+def insert_message(message: Message, db_session=None):
+    db = db_session or get_session() 
     try:
         db.add(message)
         db.commit()
@@ -21,7 +21,8 @@ def insert_message(message: Message):
         logger.error(f"Error al insertar el mensaje {e}")
         return None
 
-def check_streak(user_id):
+def check_streak(user_id, db_session=None):
+    db = db_session or get_session()
     try:
         dates = db.query(
             func.date(Message.created_at)

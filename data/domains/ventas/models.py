@@ -16,7 +16,7 @@ class VentaDB(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     metodo_pago = Column(String, default="efectivo")
     total = Column(Float, default=0.0)
-    fecha = Column(DateTime, default=datetime.utcnow)
+    fecha = Column(DateTime(timezone=True), default=datetime.now())
     
     # Relación: al borrar la venta, se borran sus detalles (cascade)
     detalles = relationship("DetalleVentaDB", back_populates="venta", cascade="all, delete-orphan")

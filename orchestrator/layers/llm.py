@@ -1,13 +1,14 @@
-import os
-from typing import List, Optional
+import logging
+from typing import List
 from pydantic import BaseModel
 from unidecode import unidecode
-from langchain_google_genai import ChatGoogleGenerativeAI
-from llm.prompt.entity_extractor import ROUTER_PROMPT
+from llm.prompt.entity_extractor import ROUTER_PROMPT, EXTRAER_INTENCION_PROMPT
 from llm.prompt.utils import INSTRUCCION_IDIOMA, CONTEXTO_ASISTENTE
 
 from pydantic import BaseModel
 from typing import List
+
+logger = logging.getLogger(__name__)
 
 class TaskFragment(BaseModel):
     action: str # Ejemplo: 'registrar_venta', 'registrar_recordatorio', 'consultar_expediente'
@@ -39,3 +40,30 @@ class LLMLayer:
             print(f"Error en el Router: {e}")
             # Fallback seguro: tratar todo como charla narrativa
             return [{"action": "charla_narrativa", "fragmento": message, "prioridad": 0}]
+        
+    def identify_action(self, message, intention):
+        """Obtiene la intención del usuario"""
+        logger.info("Identificando acción")
+        unidecoded_message = unidecode(message).strip().lower()
+
+        words_in_message = set(unidecoded_message.split())
+        if intention == 'venta':
+            keywords_consulta = {'consultar', 'ver', 'dame', 'dar', 'cuales', 'semana', 'mes', 'dia', 'diario', 'cuanto', 'reporte'}
+            if words_in_message.intersection(keywords_consulta):
+                return 'consultar_venta'
+            else:
+                return 'registrar_venta'
+        elif intention == 'recordatorios':
+            keywords_consulta = {'consultar', 'dame', 'dar', 'cuales', 'tengo', 'pendientes', 'recordatorios', 'lista'}
+            if words_in_message.intersection(keywords_consulta):
+                return 'consultar_recordatorio'
+            else:
+                return 'registrar_recordatorio'
+        elif unidecoded_message in ['hola','menu','ola','.']:
+            return 'IDLE'
+        else:
+            return self.model.invoke(
+                INSTRUCCION_IDIOMA + 
+                CONTEXTO_ASISTENTE +
+                EXTRAER_INTENCION_PROMPT.format(mensaje=unidecoded_message)
+            ).content

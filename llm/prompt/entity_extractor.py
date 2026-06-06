@@ -3,7 +3,7 @@ Extrae únicamente la información que te solicito y nada más. Si no es posible
 Este es el mensaje del usuario {mensaje}"""
 
 EXTRAER_INTENCION_PROMPT = """Debes extraer la intención del mensaje del usuario.
-La intención puede ser 'registrar_venta', 'registrar_inventario', 'borrar_venta', 'borrar_inventario', 'registrar_gasto', 'borrar_gasto', 'registrar_recordatorio' o 'menu'. 
+La intención puede ser 'registrar_venta','consultar_venta','registrar_recordatorio','consultar_recordatorio' o 'menu'. 
 Por defecto, la intención es 'menu'.
 Regresa solamente la intención y nada más. Este es el mensaje {mensaje}"""
 
@@ -18,7 +18,7 @@ REGLAS DE ORO:
 
 ACCIONES DISPONIBLES:
 - VENTAS: 'registrar_venta', 'borrar_venta', 'consultar_venta' (requiere: monto, concepto opcional).
-- RECORDATORIOS: 'registrar_recordatorio' (requiere: mensaje_recordatorio, fecha_hora_iso).
+- RECORDATORIOS: 'registrar_recordatorio', 'consultar_recordatorio' (requiere: mensaje_recordatorio, fecha_hora_iso).
 - EXPEDIENTES: 'registrar_expediente', 'editar_expediente', 'borrar_expediente', 'consultar_expediente' (requiere: nombre_cliente, detalles).
 - PERFIL: 'actualizar_perfil' (requiere: nombre_usuario o nombre_negocio).
 

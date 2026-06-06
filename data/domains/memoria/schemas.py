@@ -1,72 +1,75 @@
-from datetime import datetime, timezone
+from datetime import datetime
 from pydantic import BaseModel, Field
-from typing import List
-from data.core.menus.etapa1 import DatosNegocio
-from data.core.menus.venta import Venta
-from data.core.menus.gastos import Gasto
-from data.core.menus.inventario import Inventario
-from data.core.menus.recordatorio import Recordatorio
-from data.core.menus.etapa1 import Etapa1
-
-class GenericResult(BaseModel):
-    aibo_message: List[str] = Field(strict=True, default=[], validate_default=True)
-    user_message: List[str] = Field(strict=True, default=[], validate_default=True)
-    llm_response: str = Field(strict=True, default="", validate_default=True)
-    active: bool = Field(strict=True, default=False, validate_default=True)
-
-    def get_full_user_message(self) -> str:
-        return "\n".join(self.user_message)
+from typing import List, Optional, Dict, Any
 
 class GlobalMemory(BaseModel):
-    datos_negocio: DatosNegocio = Field(strict=True, default=DatosNegocio(), validate_default=True)
+    nombre_emprendedor: str = Field(default="")
+    nombre_negocio: str = Field(default="")
     language: str = Field(strict=True, default="es", validate_default=True)
-
-class LocalState(BaseModel):
-    etapa1: Etapa1 = Field(strict=True, default=Etapa1(), validate_default=True)
-    ventas: Venta = Field(strict=True, default=Venta(), validate_default=True)
-    gastos: Gasto = Field(strict=True, default=Gasto(), validate_default=True)
-    inventario: Inventario = Field(strict=True, default=Inventario(), validate_default=True)
-    recordatorio: Recordatorio = Field(strict=True, default=Recordatorio(), validate_default=True)
-    menu: GenericResult = Field(strict=True, default=GenericResult(), validate_default=True)
-    
-
-    def get_active_state(self) -> str:
-        for state_name in self.model_dump().keys():
-            state_obj = getattr(self, state_name)
-            if state_obj.active:
-                return state_name
-        return None
-
-    def get_active_state_obj(self):
-        for state_name in self.model_dump().keys():
-            state_obj = getattr(self, state_name)
-            if state_obj.active:
-                return state_obj
-        return None
-
-    def change_status(self, state_name: str, status: bool):
-        model = self.model_dump()
-        for state in model.keys():
-            if state == state_name:
-                model[state]["active"] = status
-            else:
-                model[state]["active"] = False
-        self.__init__(**model)
 
 class Memory(BaseModel):
     user_id: str = Field(strict=True, default="", validate_default=True)
     active_context: str = Field(strict=True, default="", validate_default=True)
     machine_stack: List[str] = Field(strict=True, default=[], validate_default=True)
     global_memory: GlobalMemory = Field(strict=True, default=GlobalMemory(), validate_default=True)
-    local_state: LocalState = Field(strict=True, default={}, validate_default=True)
-    last_interaction: datetime = Field(strict=True, default_factory=lambda: datetime.now(), validate_default=True)
+    local_state: Dict
+    last_interaction: datetime
     task_name: str = Field(strict=True, default="", validate_default=True)
     creditos_disponibles: int = Field(strict=True, default=20, validate_default=True)
+    temporary_context: Optional[Dict[str, Any]] = None
 
     def restar_credito(self, creditos: int):
         self.creditos_disponibles -= creditos
 
+    def reset_active_context(self):
+        # Reinicia contexto actual
+        context = self.local_state[self.active_context]
+        context['message'] = []
+        context['message_type'] = ""
+        context['intention'] = ""
+        
+        try:
+            # Reinicia estado IDLE
+            idle_context = self.local_state['IDLE']
+            idle_context['message'] = []
+            idle_context['message_type'] = ""
+            idle_context['intention'] = ""
+        except:
+            self.add_new_local_state("IDLE")
+
+        self.active_context = "IDLE"
+
+    def add_new_local_state(self, state):
+        self.local_state[state] = {
+            'message': [],
+            'message_type': "",
+            "intention": ""
+        }
+
+    def get_message(self):
+        return "\n".join(self.local_state[self.active_context]['message'])
+
     def append_message(self, message: str):
-        active_state = self.local_state.get_active_state_obj()
-        if active_state is not None:
-            active_state.user_message.append(message)
+        try:
+            self.local_state[self.active_context]['message'].append(message)
+        except:
+            self.local_state[self.active_context] = {
+                'message': [message],
+                'message_type': "",
+                'intention': ""
+            }
+
+    def update_message_type(self, value):
+        self.local_state[self.active_context]['message_type'] = value
+
+    def update_intention(self, value):
+        self.local_state[self.active_context]['intention'] = value
+
+    def get_intention(self) -> str:
+        return self.local_state[self.active_context]['intention']
+    
+    def get_message_type(self) -> str:
+        return self.local_state[self.active_context]['message_type']
+
+    def update_last_interaction(self, last_interaction=None):
+        self.last_interaction = last_interaction or datetime.now()

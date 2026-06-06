@@ -17,7 +17,6 @@ base_url = os.environ.get('CLOUD_TASK_BASE_URL', '')
 url = base_url + '/consume_message'
 url_summary = base_url + '/sales_summary'
 url_remainder = base_url + '/remainder'
-url_remainder_activity = base_url + '/task_remainder'
 service_account = "aibo-sql@gen-lang-client-0680947061.iam.gserviceaccount.com"
 
 client = tasks_v2.CloudTasksClient()
@@ -44,43 +43,6 @@ def delete_inactivity_task(task_id: Optional[str] = None, phone_number: Optional
         client.delete_task(name=task_name)
     except Exception as e:
         logger.error(f"Error al eliminar la tarea de inactividad: {e}")
-
-def schedule_remainder_activity(phone_number: str, task_name: Optional[str] = None):
-    if task_name:
-        tasks = list_scheduled_tasks()
-        for task in tasks:
-            if task[0] == phone_number and task[1] == url_summary:
-                delete_remainder_activity(task_name)
-
-    tz_cdmx = ZoneInfo("America/Mexico_City")
-    current_date = datetime.now(tz_cdmx)
-    scheduled_date = current_date.replace(hour=13, minute=5, second=0, microsecond=0)
-    if current_date >= scheduled_date:
-        scheduled_date += timedelta(days=1)
-    
-    payload = {'sender': phone_number, 'message': message}
-
-    task_id = f"{uuid.uuid4()}-recordatorio_actividad-{phone_number}"
-    task_name = f"projects/{project}/locations/{location}/queues/{queue}/tasks/{task_id}"
-    task = {
-        'name': task_name,
-        'http_request': {
-            'http_method': tasks_v2.HttpMethod.POST,
-            'url': url_remainder_activity,
-            'headers': {
-                'Content-Type': 'application/json'
-            },
-            'body': json.dumps(payload).encode(),
-            'oidc_token': {
-                'service_account_email': service_account,
-                'audience': url_remainder_activity
-            }
-        },
-        'schedule_time': scheduled_date
-    }
-
-    response = client.create_task(request={'parent': parent, 'task': task})
-    return task_id
 
 def schedule_remainder_task(phone_number: str, fecha_recordatorio: datetime, message: str):
     tz_cdmx = ZoneInfo("America/Mexico_City")

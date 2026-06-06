@@ -1,15 +1,14 @@
 import logging
 from data.config.database import get_session
-from .schemas import Memory, GlobalMemory, LocalState
+from .schemas import Memory, GlobalMemory
 from .models import Memory as MemorySQL
 from .models import MemoriaEstados as MemoriaEstadosSQL
 from sqlalchemy import update
 
 logger = logging.getLogger(__name__)
-db = get_session()
 
 
-def insert_memory(memory: Memory) -> str:
+def insert_memory(memory: Memory, db_session=None) -> str:
     logger.info("Insertando memoria")
     """
     Inserta una memoria en la base de datos.
@@ -20,11 +19,12 @@ def insert_memory(memory: Memory) -> str:
         active_context=memory.active_context,
         machine_stack=memory.machine_stack,
         global_memory=memory.global_memory.model_dump(),
-        local_state=memory.local_state.model_dump(),
+        local_state=memory.local_state,
         last_interaction=memory.last_interaction,
         task_name=memory.task_name,
         creditos_disponibles=memory.creditos_disponibles
     )
+    db = db_session or get_session()
     try:
         db.add(new_memory)
         db.commit()
@@ -35,11 +35,12 @@ def insert_memory(memory: Memory) -> str:
         db.rollback()
         return None
 
-def get_memory(user_id: str) -> Memory:
+def get_memory(user_id: str, db_session=None) -> Memory:
     logger.info("Obteniendo memoria")
     """
     Obtiene una memoria de la base de datos.
     """
+    db = db_session or get_session()
     try:
         memory_sql = db.query(MemorySQL).where(MemorySQL.user_id == user_id).first()
         if memory_sql:
@@ -48,7 +49,7 @@ def get_memory(user_id: str) -> Memory:
                 active_context=memory_sql.active_context,
                 machine_stack=memory_sql.machine_stack,
                 global_memory=GlobalMemory(**memory_sql.global_memory),
-                local_state=LocalState(**memory_sql.local_state),
+                local_state=memory_sql.local_state,
                 last_interaction=memory_sql.last_interaction,
                 task_name=memory_sql.task_name,
                 creditos_disponibles=memory_sql.creditos_disponibles
@@ -59,11 +60,11 @@ def get_memory(user_id: str) -> Memory:
         db.rollback()
         return None
 
-def update_memory(memory: Memory) -> bool:
+def update_memory(memory: Memory, db_session=None) -> bool:
     """
     Actualiza una memoria en la base de datos.
     """
-    
+    db = db_session or get_session()
     try:
         stmt = update(
             MemorySQL
@@ -73,7 +74,7 @@ def update_memory(memory: Memory) -> bool:
             active_context=memory.active_context,
             machine_stack=memory.machine_stack,
             global_memory=memory.global_memory.model_dump(),
-            local_state=memory.local_state.model_dump(),
+            local_state=memory.local_state,
             last_interaction=memory.last_interaction,
             task_name=memory.task_name,
             creditos_disponibles=memory.creditos_disponibles
@@ -86,7 +87,8 @@ def update_memory(memory: Memory) -> bool:
         db.rollback()
         return False
 
-def get_memory_state(user_id: str):
+def get_memory_state(user_id: str, db_session=None):
+    db = db_session or get_session()
     try:
         memoria_estado_sql = db.query(MemoriaEstadosSQL).where(MemoriaEstadosSQL.user_id == user_id).first()
         if not memoria_estado_sql:
@@ -98,7 +100,8 @@ def get_memory_state(user_id: str):
         db.rollback()
         return None
 
-def insert_memory_state(memory_state):
+def insert_memory_state(memory_state, db_session=None):
+    db = db_session or get_session()
     try:
         db.add(memory_state)
         db.commit()
