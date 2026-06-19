@@ -37,6 +37,12 @@ class AiBoDirector:
             },
             'bienvenida': Bienvenida()
         }
+        self.actions_aplanado = {
+            'registrar_venta': CreateSalesAction(),
+            'consultar_venta': QuerySalesAction(),
+            'registrar_recordatorio': CreateRemaindersAction(),
+            'consultar_recordatorio': QueryRemaindersAction(),
+        }
         # self.db_session = get_session()
         
     def execute_logic(self, memory, current_date, db_session):
@@ -74,10 +80,12 @@ class AiBoDirector:
         elif message_type == 'text' and intention == "":
             # Envia el menú
             send_transition(db_session, memory.user_id, "IDLE", None)
+            # self._plan_and_execute(full_message, memory, db_session, current_date)
+            # memory.reset_active_context()
 
         else:
-            # TODO: No está implementada esta acción
             logger.warning(f"Intención no implementada o entendida\n{memory.active_context}\n{message_type}\n{intention}")
+            send_transition(db_session, memory.user_id, "errores", "generico")
 
         return memory
 
@@ -100,27 +108,25 @@ class AiBoDirector:
 
         return transicion, mensaje, memory
 
-    # def _plan_and_execute(self, message):
-    #     execution_results = []
-    #     execution_plan = self.llm_layer.split_tasks(message)
-    #     actions_aplanado = {
-    #         sub_clave: valor 
-    #         for llave_padre, sub_diccionario in self.actions.items() 
-    #         for sub_clave, valor in sub_diccionario.items()
-    #     }
+    def _plan_and_execute(self, message, memory, db_session, current_date):
+        execution_results = []
+        execution_plan = self.llm_layer.split_tasks(message)
 
-    #     for task in execution_plan:
-    #         action_name = task['action']
-    #         phrase = task['phrase']
+        logger.info("Plan de ejecución")
+        logger.info(execution_plan)
 
-    #         logger.info(f"Ejecutando accion {action_name}")
-    #         action = actions_aplanado[action_name]
-    #         action_res = action.execute(self.memory, phrase, None)
-    #         self.memory = action_res.get('memory', self.memory)
-    #         mensaje = action_res.get('mensaje', '')
+        for task in execution_plan:
+            action_name = task['action']
+            phrase = task['phrase']
 
-    #         execution_results.append(mensaje)
-    #     return execution_results
+            logger.info(f"Ejecutando accion {action_name}")
+            action = self.actions_aplanado[action_name]
+            action_res = action.execute(memory, phrase, db_session=db_session, current_date=current_date)
+            memory = action_res.get('memory', memory)
+            mensaje = action_res.get('mensaje', {})
+            transicion = action_res.get('transicion', '')
+
+            send_transition(db_session, memory.user_id, memory.active_context, transicion, **mensaje)
     
     # def _prepara_respuesta(self, mensajes):
     #     pass
