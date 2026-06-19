@@ -96,60 +96,24 @@ def get_sales_count(user_id: str, db_session=None) -> int:
         logger.error(f"Error al recuperar todas las ventas: {e}")
         return 0
 
-def get_sales_summary(start_date, end_date, group_by: str, phone_number: str, db_session=None):
+def get_sales_summary(start_date, end_date, phone_number: str, db_session=None):
     try:
         db = db_session or get_session()
-        if not group_by:
-            query_objeto = db.query(
-                func.sum(VentaDB.total), func.count(VentaDB.id)
-            ).filter(
-                func.timezone("America/Mexico_City",VentaDB.fecha) >= start_date,
-                func.timezone("America/Mexico_City",VentaDB.fecha) < end_date,
-                VentaDB.phone_number == phone_number
-            )
+        query_objeto = db.query(
+            func.sum(VentaDB.total), func.count(VentaDB.id)
+        ).filter(
+            func.timezone("America/Mexico_City",VentaDB.fecha) >= start_date,
+            func.timezone("America/Mexico_City",VentaDB.fecha) < end_date,
+            VentaDB.phone_number == phone_number
+        )
 
-            total_neto = query_objeto.first()
+        total_neto = query_objeto.first()
 
-            return {
-                "periodo_solicitado": f"{start_date} al {end_date - timedelta(days=1)}",
-                "total": float(total_neto[0] or 0),
-                "cantidad_transacciones": total_neto[1] or 0
-            }
-        else:
-            return {
-                "cantidad_transacciones": 0
-            }
-        # if group_by == 'day':
-        #     date_format = func.date(VentaDB.fecha)
-        # elif group_by == 'week':
-        #     date_format = func.strftime('%Y-%W', VentaDB.fecha)
-        # elif group_by == 'month':
-        #     date_format = func.strftime('%Y-%m', VentaDB.fecha)
-        # elif group_by == 'year':
-        #     date_format = func.strftime('%Y', VentaDB.fecha)
-        # else:
-        #     date_format = func.date(VentaDB.fecha)
-
-        # results = db.query(
-        #     date_format.label("temporalidad"),
-        #     func.sum(VentaDB.total).label("total_ventas"),
-        #     func.count(VentaDB.id).label("cantidad")
-        # ).filter(
-        #     VentaDB.fecha >= start_date, VentaDB.fecha <= end_date,
-        #     VentaDB.phone_number == phone_number
-        # ).group_by(
-        #     "temporalidad"
-        # ).order_by(
-        #     "temporalidad"
-        # ).all()
-
-        # return {
-        #     "periodo_solicitado": f"{start_date} al {end_date - timedelta(days=1)}",
-        #     "desglose": [
-        #         {"subperiodo": row.temporalidad, "total": float(row.total_ventas or 0), "cantidad": row.cantidad or 0}
-        #         for row in results
-        #     ]
-        # }
+        return {
+            "periodo_solicitado": f"{start_date} al {end_date - timedelta(days=1)}",
+            "total": float(total_neto[0] or 0),
+            "cantidad_transacciones": total_neto[1] or 0
+        }
     except Exception as e:
         logger.error(f"Error al consultas las ventas: {e}")
         return None

@@ -1,5 +1,6 @@
 import os
 import base64
+import logging
 from unidecode import unidecode
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import HumanMessage
@@ -8,6 +9,8 @@ from .prompts import SALES_EXTRACTOR_PROMPT, EXTRAER_IMAGEN_DATOS_VENTA, QUERY_S
 from config.prompts import INSTRUCCION_IDIOMA, CONTEXTO_ASISTENTE
 from config.utils import calcular_rango_fechas
 from config.llm import MODEL_GEMINI_FLASH, ENTITY_TEMPERATURE, ENTITY_MAX_OUTPUT_TOKENS, ENTITY_THINKING_BUDGET
+
+logger = logging.getLogger(__name__)
 
 semana_referencia_map = {
     "actual": 0,
@@ -95,11 +98,9 @@ def get_sales_query(mensaje:str, current_date):
 
     start_date, end_date = calcular_rango_fechas(res.rango_solicitado, current_date, res)
 
-    
     venta_query = {
         "start_date": start_date.in_timezone("UTC").date(),
-        "end_date": end_date.in_timezone("UTC").date(),
-        "group_by": res.group_by
+        "end_date": end_date.in_timezone("UTC").date()
     }
 
     return venta_query

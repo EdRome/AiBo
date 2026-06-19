@@ -2,13 +2,11 @@ import logging
 from cloud_task.cloud_task import schedule_remainder_task
 from ..repository import insert_remainder
 from ..llm.extractor import get_remainder_data
+from config.utils import formatear_fecha_humana
 
 logger = logging.getLogger(__name__)
 
 class CreateRemaindersAction:
-
-    # def __init__(self, idioma):
-    #     self.idioma = idioma
 
     def execute(self, memory, message: str, image: bytes = None, db_session=None, current_date=None):
         logger.info("Creando recordatorios")
@@ -21,7 +19,7 @@ class CreateRemaindersAction:
 
             return_obj['transicion'] = "confirmacion_registro"
             return_obj['mensaje'] = {
-                "lista_detalle": "\n".join(["-" + recordatorio.recordatorio + " " + recordatorio.fecha_recordatorio.strftime("%d-%m-%Y %H:%M") for recordatorio in recordatorios])
+                "lista_detalle": "\n".join(["-" + recordatorio.recordatorio + " " + formatear_fecha_humana(recordatorio.fecha_recordatorio) for recordatorio in recordatorios])
             }
         except Exception as e:
             logger.error(f"Error al crear recordatorios: {e}")
@@ -47,5 +45,4 @@ class CreateRemaindersAction:
         except Exception as e:
             logger.error(f"Error al procesar el texto del recordatorio {e}")
             return None
-
 

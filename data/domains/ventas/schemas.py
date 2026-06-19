@@ -84,10 +84,10 @@ class SalesQueryExtraction(BaseModel):
         ...,
         description='Mes de análisis, puede ser: null | int (1-12)'
     )
-    group_by: Optional[str] = Field(
-        ...,
-        description='Agrupación por periodo de tiempo, puede ser: "day" | "month" | null'
-    )
+    # group_by: Optional[str] = Field(
+    #     ...,
+    #     description='Agrupación por periodo de tiempo, puede ser: "day" | "month" | null'
+    # )
 
 class SaleSearchCriteria(BaseModel):
     start_date: Optional[str] = Field(

@@ -15,10 +15,10 @@ class QuerySalesAction:
             sales_query = get_sales_query(message, current_date)
             if sales_query['start_date'] == '1900-12-31' and sales_query['end_date'] == '1900-12-31':
                 raise Exception("Error en la consulta de ventas")
+
             resultado_db = get_sales_summary(
                 start_date=sales_query["start_date"],
                 end_date=sales_query["end_date"],
-                group_by=sales_query["group_by"],
                 phone_number=memory.user_id,
                 db_session=db_session
             )
@@ -28,6 +28,7 @@ class QuerySalesAction:
                 return_obj['transicion'] = "confirmacion_consulta" if resultado_db["cantidad_transacciones"] > 0 else "cero_consulta"
             else:
                 return_obj['transicion'] = "error_consulta"
+
         except Exception as e:
             logger.error(f"Error en QuerySalesAction: {str(e)}")
             return_obj['transicion'] = "error_consulta"

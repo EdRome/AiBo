@@ -34,6 +34,7 @@ class LLMLayer:
             plan = task_planer.invoke(prompt)
             
             # Convertimos a lista de diccionarios para el AiBoDirector
+            logger.info(plan)
             return [task.model_dump() for task in plan.tasks]
             
         except Exception as e:

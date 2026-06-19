@@ -1,6 +1,7 @@
 import os
 import logging
 from langchain_google_genai import ChatGoogleGenerativeAI
+from datetime import timedelta
 from zoneinfo import ZoneInfo
 from ..schemas import Recordatorio, ListaRecordatorios, RemainderQueryExtraction
 from .prompts import REMAINDER_EXTRACTOR_PROMPT, QUERY_REMAINDERS_PROMPT
@@ -28,13 +29,21 @@ def get_remainder_data(message, user_id, current_date):
             REMAINDER_EXTRACTOR_PROMPT.format(message=message)
         )
 
-        return [
-            Recordatorio(
-                phone_number=user_id,
-                fecha_recordatorio=recordatorio.fecha_recordatorio.replace(tzinfo=tz_cdmx),
-                recordatorio=recordatorio.recordatorio
-            ) for recordatorio in recordatorio_create.recordatorios
-        ]
+
+        recordatorios_return = []
+        for recordatorio in recordatorio_create.recordatorios:
+            recordatorio_cdmx = recordatorio.fecha_recordatorio.replace(tzinfo=tz_cdmx)
+            if (recordatorio_cdmx - current_date).days < 0:
+                recordatorio_cdmx += timedelta(days=1)
+            
+            recordatorios_return.append(
+                Recordatorio(
+                    phone_number=user_id, 
+                    fecha_recordatorio=recordatorio_cdmx, 
+                    recordatorio=recordatorio.recordatorio)
+            )
+
+        return recordatorios_return
     except Exception as e:
         logger.error(f"Error al extraer información del recordatorio: {e}")
         return None

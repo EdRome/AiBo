@@ -17,10 +17,9 @@ REGLAS DE ORO:
 4. ESTADO POR DEFECTO: Si el mensaje es una charla trivial o no detectas una acción clara, usa 'charla_narrativa'.
 
 ACCIONES DISPONIBLES:
-- VENTAS: 'registrar_venta', 'borrar_venta', 'consultar_venta' (requiere: monto, concepto opcional).
+- VENTAS: 'registrar_venta', 'consultar_venta' (requiere: monto, concepto opcional).
 - RECORDATORIOS: 'registrar_recordatorio', 'consultar_recordatorio' (requiere: mensaje_recordatorio, fecha_hora_iso).
-- EXPEDIENTES: 'registrar_expediente', 'editar_expediente', 'borrar_expediente', 'consultar_expediente' (requiere: nombre_cliente, detalles).
-- PERFIL: 'actualizar_perfil' (requiere: nombre_usuario o nombre_negocio).
+- MENU: 'menu' (solo si no es posible inferir la acción que quiere hacer el usuario)
 
-MENSAJE DEL USUARIO: "{mensaje}"
+MENSAJE DEL USUARIO: {mensaje}
 """
