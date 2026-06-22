@@ -1,9 +1,10 @@
 import logging
+from sqlalchemy import update, func, and_
+from datetime import timedelta
 from data.db.utils import get_session
 from .models import Recordatorio as RecordatorioSQL
 from .schemas import RecordatorioBase
-from sqlalchemy import update, func, and_
-from datetime import timedelta
+from config.utils import formatear_fecha_humana_intervalo, get_current_date
 
 logger = logging.getLogger(__name__)
 
@@ -93,22 +94,25 @@ def get_remainder_by_criteria(user_id: str, start_date=None, end_date=None, sear
         lista_formateada = []
         for r in recordatorios:
             # Extraemos la fecha del recordatorio
-            fecha = r.fecha_recordatorio  
-            
-            # Obtenemos el nombre del día y del mes en español usando el índice
-            dia_semana = DIAS[fecha.weekday()]
-            dia = fecha.day
-            mes = MESES[fecha.month - 1]  # Restamos 1 porque los meses van de 1 a 12 y la lista de 0 a 11
-            hora = fecha.hour
-            minutos = str(fecha.minute).zfill(2)
-            
-            # Creamos la línea con el formato
-            linea = f"- El {dia_semana} {dia} de {mes}: {r.mensaje} a las {hora}:{minutos}\n"
-            lista_formateada.append(linea)
+            fecha = r.fecha_recordatorio
+            if fecha >= get_current_date(): # Filtra solamente los recordatorios activos
+                
+                # Obtenemos el nombre del día y del mes en español usando el índice
+                dia_semana = DIAS[fecha.weekday()]
+                dia = fecha.day
+                mes = MESES[fecha.month - 1]  # Restamos 1 porque los meses van de 1 a 12 y la lista de 0 a 11
+                hora = fecha.hour
+                minutos = str(fecha.minute).zfill(2)
+                
+                # Creamos la línea con el formato
+                linea = f"- El {dia_semana} {dia} de {mes}: {r.mensaje} a las {hora}:{minutos}\n"
+                lista_formateada.append(linea)
         
 
+        intervalo_humano = formatear_fecha_humana_intervalo(start_date, end_date - timedelta(days=1))
+
         return {
-            "periodo_solicitado": f"{start_date} al {end_date - timedelta(days=1)}",
+            "periodo_solicitado": intervalo_humano,
             "lista_recordatorios": "".join(lista_formateada)
         }
     except Exception as e:

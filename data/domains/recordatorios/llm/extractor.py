@@ -57,7 +57,16 @@ def get_remainder_query_extractor(message, current_date):
             QUERY_REMAINDERS_PROMPT.format(mensaje=message)
         )
 
+        logger.info("##################### RES #####################")
+        logger.info(res)
+        logger.info("###############################################")
+
         start_date, end_date = calcular_rango_fechas(res.rango_solicitado, current_date, res)
+
+        logger.info("##################### RANGO FECHAS #####################")
+        logger.info(start_date)
+        logger.info(end_date)
+        logger.info("########################################################")
         
         remainder_query = {
             "start_date": start_date.date(),

@@ -1,12 +1,13 @@
 import logging
-from .schemas import VentaCreate
-from .models import VentaDB, DetalleVentaDB, SalesSummaryDB
-from data.db.utils import get_session
 from sqlalchemy import and_, func
 from sqlalchemy import exc
 from typing import List
 from datetime import timedelta
 from zoneinfo import ZoneInfo
+from .schemas import VentaCreate
+from .models import VentaDB, DetalleVentaDB, SalesSummaryDB
+from data.db.utils import get_session
+from config.utils import formatear_fecha_humana_intervalo
 
 logger = logging.getLogger(__name__)
 
@@ -109,8 +110,10 @@ def get_sales_summary(start_date, end_date, phone_number: str, db_session=None):
 
         total_neto = query_objeto.first()
 
+        intervalo_humano = formatear_fecha_humana_intervalo(start_date, end_date - timedelta(days=1))
+
         return {
-            "periodo_solicitado": f"{start_date} al {end_date - timedelta(days=1)}",
+            "periodo_solicitado": intervalo_humano,
             "total": float(total_neto[0] or 0),
             "cantidad_transacciones": total_neto[1] or 0
         }

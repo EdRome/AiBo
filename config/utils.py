@@ -54,29 +54,32 @@ def calcular_rango_fechas(rango_solicitado: str, current_date: pendulum.DateTime
         return start_date, start_date.add(days=1)
 
     if rango_solicitado == "especifico" and res:
+        # Encontramos el día objetivo dentro de esa semana
+        dia_semana = getattr(res, 'dia_semana')
+        if dia_semana is None:
+            dia_semana = 0
+
         # Determinamos la semana base de anclaje
-        relacion = getattr(res, 'relacion_semana', 'actual')
+        relacion = getattr(res, 'relacion_semana')
         if relacion is None:
-            relacion = "actual"
-    
+            start_date = ahora
         if relacion == "pasada":
             base_semana = ahora.subtract(weeks=1)
+            start_date = base_semana.start_of('week').add(days=dia_semana)
         elif relacion == "siguiente":
             base_semana = ahora.add(weeks=1)
+            start_date = base_semana.start_of('week').add(days=dia_semana)
         else:
             base_semana = ahora
-
-        # Encontramos el día objetivo dentro de esa semana
-        dia_semana = getattr(res, 'dia_semana', 1)
-        if dia_semana is None:
-            dia_semana = 1
-
-        start_date = base_semana.start_of('week').add(days=dia_semana)
+            start_date = base_semana.start_of('week').add(days=dia_semana)
         
         # Si se solicita explícitamente forzar un mes específico
-        mes_especifico = getattr(res, 'mes_especifico', 1)
-        if mes_especifico:
+        mes_especifico = getattr(res, 'mes_especifico')
+        if mes_especifico and relacion is not None:
             start_date = start_date.set(month=mes_especifico)
+        elif mes_especifico and relacion is None:
+            start_date = start_date.set(month=mes_especifico).start_of('month')
+            return start_date.in_timezone("UTC"), start_date.end_of('month').in_timezone("UTC")
 
         return start_date.start_of('day').in_timezone("UTC"), start_date.add(days=1).start_of('day').in_timezone("UTC")
 
@@ -90,46 +93,104 @@ def formatear_fecha_humana(fecha_recordatorio):
     """
     # 1. Convertir a objeto date si viene como string
     if isinstance(fecha_recordatorio, str):
-        fecha_recordatorio = datetime.strptime(fecha_recordatorio, "%Y-%m-%d %H:%M")
+        # fecha_recordatorio = datetime.strptime(fecha_recordatorio, "%Y-%m-%d %H:%M")
+        fecha_recordatorio = pendulum.parse(fecha_recordatorio)
     elif isinstance(fecha_recordatorio, datetime):
-        fecha_recordatorio = fecha_recordatorio
+        fecha_recordatorio = pendulum.parse(fecha_recordatorio.isoformat())
+    elif isinstance(fecha_recordatorio, pendulum.Date):
+        fecha_recordatorio = pendulum.datetime(year=fecha_recordatorio.year, month=fecha_recordatorio.month, day=fecha_recordatorio.day)
         
-    hoy = get_current_date()
-    es_hoy = fecha_recordatorio.date() == hoy.date()
-    diferencia = (fecha_recordatorio.date() - hoy.date()).days
-    after = fecha_recordatorio > hoy
-    before = fecha_recordatorio < hoy
+    tiene_hora = hasattr(fecha_recordatorio, 'hour')
+    hoy = pendulum.parse(get_current_date().isoformat())
+    diferencia = fecha_recordatorio.diff(hoy).in_days()
 
     # Diccionarios para traducir días y meses a español sin depender del sistema operativo
-    dias_semana = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
-    meses = [
-        "enero", "febrero", "marzo", "abril", "mayo", "junio",
-        "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
-    ]
+    # dias_semana = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
+    # meses = [
+    #     "enero", "febrero", "marzo", "abril", "mayo", "junio",
+    #     "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
+    # ]
 
-    fecha_inmediata = "{dia} a las {hora}"
     dia = ""
     # 2. Casos inmediatos
-    if es_hoy:
+    if fecha_recordatorio.is_same_day(hoy):
         dia = "Hoy"
-    elif not es_hoy and after:
+    elif fecha_recordatorio.is_future() and diferencia == 1:
         dia = "Mañana"
-    elif not es_hoy and before:
+    elif fecha_recordatorio.is_past() and diferencia == 1:
         dia = "Ayer"
     
     if dia != "":
-        return fecha_inmediata.format(dia=dia, hora=fecha_recordatorio.strftime("%H:%M"))
+        if tiene_hora:
+            fecha_inmediata = "{dia} a las {hora}"
+            return fecha_inmediata.format(dia=dia, hora=fecha_recordatorio.strftime("%H:%M"))
+        else:
+            fecha_inmediata = "{dia}"
+            return fecha_inmediata.format(dia=dia)
 
     # 3. Próximos 7 días (ej. "el martes 16")
     if 1 < diferencia < 7:
-        nombre_dia = dias_semana[fecha_recordatorio.weekday()]
-        return f"el {nombre_dia} {fecha_recordatorio.day} a las {fecha_recordatorio.strftime('%H:%M')}"
+        # nombre_dia = dias_semana[fecha_recordatorio.weekday()]
+        nombre_dia = fecha_recordatorio.format("dddd", locale="es")
+        if tiene_hora:
+            return f"el {nombre_dia} {fecha_recordatorio.day} a las {fecha_recordatorio.strftime('%H:%M')}"
+        else:
+            return f"el {nombre_dia} {fecha_recordatorio.day}"
 
     # 4. Fechas lejanas: Día + Mes completo en español (ej. "14 de julio")
-    nombre_mes = meses[fecha_recordatorio.month - 1]
+    # nombre_mes = meses[fecha_recordatorio.month - 1]
+    nombre_mes = fecha_recordatorio.format("MMMM", locale="es")
     
     # Si es de un año diferente al actual, añadimos el año para que no haya confusión
     if fecha_recordatorio.year != hoy.year:
-        return f"{fecha_recordatorio.day} de {nombre_mes} a las {fecha_recordatorio.strftime('%H:%M')}"
+        if tiene_hora:
+            return f"{fecha_recordatorio.day} de {nombre_mes} a las {fecha_recordatorio.strftime('%H:%M')}"
+        else:
+            return f"{fecha_recordatorio.day} de {nombre_mes}"
     
-    return f"{fecha_recordatorio.day} de {nombre_mes} a las {fecha_recordatorio.strftime('%H:%M')}"
+    if tiene_hora:
+        return f"{fecha_recordatorio.day} de {nombre_mes} a las {fecha_recordatorio.strftime('%H:%M')}"
+    else:
+        return f"{fecha_recordatorio.day} de {nombre_mes}"
+    
+def formatear_fecha_humana_intervalo(start_date, end_date):
+    """
+    Convierte una fecha en una expresión natural en español.
+    Si es lejana, devuelve el día y el mes completo (ej. '14 de julio').
+    """
+    if isinstance(start_date, str):
+        start_date = pendulum.parse(start_date)
+    elif isinstance(start_date, datetime):
+        start_date = pendulum.parse(start_date.isoformat())
+    elif isinstance(start_date, pendulum.Date):
+        start_date = pendulum.datetime(year=start_date.year, month=start_date.month, day=start_date.day)
+    
+    if isinstance(end_date, str):
+        end_date = pendulum.parse(end_date)
+    elif isinstance(end_date, datetime):
+        end_date = pendulum.parse(end_date.isoformat())
+    elif isinstance(end_date, pendulum.Date):
+        end_date = pendulum.datetime(year=end_date.year, month=end_date.month, day=end_date.day)
+    
+    hoy = pendulum.parse(get_current_date().isoformat())
+    diferencia = start_date.diff(hoy).in_days()
+
+    start_month = start_date.format("MMMM", locale="es")
+    start_day = start_date.format("D", locale="es")
+
+    end_month = end_date.format("MMMM", locale="es")
+    end_day = end_date.format("D", locale="es")
+
+    if start_date.is_same_day(end_date):
+        if start_date.is_same_day(hoy):
+            return "hoy"
+        elif start_date.is_past() and diferencia == 1:
+            return "ayer"
+        elif start_date.is_future() and diferencia == 1:
+            return "mañana"
+
+    if start_month == end_month:
+        return f"{start_day} al {end_day} de {end_month}"
+
+    else:
+        return f"{start_day} de {start_month} al {end_day} de {end_month}"
