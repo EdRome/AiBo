@@ -1,5 +1,6 @@
 import logging
 import pendulum
+import random
 from datetime import datetime, date
 from zoneinfo import ZoneInfo
 from typing import Tuple
@@ -15,6 +16,24 @@ dias_semana = {
     5: "Sábado",
     6: "Domingo"
 }
+
+def fix_past_date_on_remainder(fecha):
+    """Cuando una fecha esté codificada para una fecha/hora en el pasado, corrige
+    el día para hacerlo en el siguiente día futuro.
+    Por ejemplo, si hoy es 22 de junio de 2026 a las 16:00 y un recordatorio se envía
+    para el 22 de junio de 2026 a las 15:00, entonces esta función va a agregar 1 día más
+    a la fecha para hacerla para el 23 de junio de 2026 a las 15:00.
+    Esto ocurre porque el LLM que extrae la información de los recordatorio puede alucinar y,
+    para evitar registrar un recordatorio en una fecha pasada que no se pueda ejecutar, esta
+    función lo arregla.
+    """
+    if isinstance(fecha, datetime):
+        fecha = pendulum.parse(fecha.isoformat())
+
+    if fecha.is_past():
+        return datetime.fromisoformat(fecha.add(days=1).isoformat())
+    else:
+        return datetime.fromisoformat(fecha.isoformat())
 
 def get_current_date():
     tz_cdmx = ZoneInfo("America/Mexico_City")
@@ -159,20 +178,20 @@ def formatear_fecha_humana_intervalo(start_date, end_date):
     Si es lejana, devuelve el día y el mes completo (ej. '14 de julio').
     """
     if isinstance(start_date, str):
-        start_date = pendulum.parse(start_date)
+        start_date = pendulum.parse(start_date, tz="America/Mexico_City")
     elif isinstance(start_date, datetime):
-        start_date = pendulum.parse(start_date.isoformat())
+        start_date = pendulum.parse(start_date.isoformat(), tz="America/Mexico_City")
     elif isinstance(start_date, pendulum.Date):
-        start_date = pendulum.datetime(year=start_date.year, month=start_date.month, day=start_date.day)
+        start_date = pendulum.datetime(year=start_date.year, month=start_date.month, day=start_date.day, tz="America/Mexico_City")
     
     if isinstance(end_date, str):
-        end_date = pendulum.parse(end_date)
+        end_date = pendulum.parse(end_date, tz="America/Mexico_City")
     elif isinstance(end_date, datetime):
-        end_date = pendulum.parse(end_date.isoformat())
+        end_date = pendulum.parse(end_date.isoformat(), tz="America/Mexico_City")
     elif isinstance(end_date, pendulum.Date):
-        end_date = pendulum.datetime(year=end_date.year, month=end_date.month, day=end_date.day)
+        end_date = pendulum.datetime(year=end_date.year, month=end_date.month, day=end_date.day, tz="America/Mexico_City")
     
-    hoy = pendulum.parse(get_current_date().isoformat())
+    hoy = pendulum.parse(get_current_date().isoformat(), tz="America/Mexico_City")
     diferencia = start_date.diff(hoy).in_days()
 
     start_month = start_date.format("MMMM", locale="es")
@@ -190,7 +209,13 @@ def formatear_fecha_humana_intervalo(start_date, end_date):
             return "mañana"
 
     if start_month == end_month:
-        return f"{start_day} al {end_day} de {end_month}"
+        if start_day == end_day:
+            return f"{start_day} de {end_month}"
+        else:
+            return f"{start_day} al {end_day} de {end_month}"
 
     else:
         return f"{start_day} de {start_month} al {end_day} de {end_month}"
+
+def pick_random_number():
+    return random.randint(1,2)

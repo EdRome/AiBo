@@ -59,8 +59,8 @@ class LLMLayer:
             plan = task_planer.invoke(prompt)
             
             # Convertimos a lista de diccionarios para el AiBoDirector
-            logger.info(plan)
-            return [task.model_dump() for task in plan.tasks]
+            action_plan = [task.model_dump() for task in plan.tasks]
+            return self._organiza_plan(action_plan)
             
         except Exception as e:
             print(f"Error en el Router: {e}")
@@ -93,3 +93,37 @@ class LLMLayer:
                 CONTEXTO_ASISTENTE +
                 EXTRAER_INTENCION_PROMPT.format(mensaje=unidecoded_message)
             ).content
+        
+    def _organiza_plan(self, action_plan):
+        """Organiza el plan de acción, esto particulamente para cubrir un caso donde los recordatorios se confirman
+        en distintos mensajes. Esto ocurre con este caso:
+        - Mañana sacar a los perros 7am, mañana ir al super 10am
+        La explicación es que repetir "mañana" después de cada coma confunde al LLM y produce esa salida no deseada
+        """
+
+        try:
+            # Separar el plan de acción por tipo
+            # Solamente se valida la acción que se tiene identificada con la alucinación
+            crear_recordatorios = list(filter(lambda task: task["action"] == "recordatorios.registrar_recordatorio", action_plan))
+            consultar_recordatorios = filter(lambda task: task["action"] == "recordatorios.consultar_recordatorio", action_plan)
+            crear_venta = filter(lambda task: task["action"] == "venta.registrar_venta", action_plan)
+            consultar_venta = filter(lambda task: task["action"] == "venta.consultar_venta", action_plan)
+
+            # SOLO PARA CREAR RECORDATORIOS: Itera la lista y crea una única acción para crear recordatorio con todos los recordatorios.
+            # El manejo de la separación se delega al action create_remainders.
+            # Esta acción solo se ejecuta si la lista de acción es mayor a 1, cuando el LLM alucina.
+            if len(crear_recordatorios) > 1:
+                action = ""
+                phrase = ""
+                for recordatorio in crear_recordatorios:
+                    action = recordatorio["action"]
+                    phrase += recordatorio["phrase"]+"\n"
+
+                crear_recordatorios = [TaskFragment(action=action, phrase=phrase.strip(), priority=1).model_dump()]
+
+                return crear_recordatorios+list(crear_venta)+list(consultar_recordatorios)+list(consultar_venta)
+            else:
+                return action_plan
+        except Exception as e:
+            logger.error(f"Error al organizar el plan {e}")
+            return action_plan

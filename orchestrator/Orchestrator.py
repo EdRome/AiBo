@@ -112,10 +112,6 @@ class AiBoDirector:
                 context, action_name = task['action'].split(".")
                 phrase = task['phrase']
 
-                logger.info("############### FRASE DE LA TAREA ###############")
-                logger.info(phrase)
-                logger.info("#################################################")
-
                 logger.info(f"Ejecutando accion {task['action']}")
                 
                 action = self.actions[context][action_name]

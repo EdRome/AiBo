@@ -6,7 +6,7 @@ from zoneinfo import ZoneInfo
 from ..schemas import Recordatorio, ListaRecordatorios, RemainderQueryExtraction
 from .prompts import REMAINDER_EXTRACTOR_PROMPT, QUERY_REMAINDERS_PROMPT
 from config.prompts import INSTRUCCION_IDIOMA, CONTEXTO_ASISTENTE
-from config.utils import calcular_rango_fechas
+from config.utils import calcular_rango_fechas, fix_past_date_on_remainder
 from config.llm import MODEL_GEMINI_FLASH, ENTITY_TEMPERATURE, ENTITY_MAX_OUTPUT_TOKENS, ENTITY_THINKING_BUDGET
 
 logger = logging.getLogger(__name__)
@@ -33,8 +33,9 @@ def get_remainder_data(message, user_id, current_date):
         recordatorios_return = []
         for recordatorio in recordatorio_create.recordatorios:
             recordatorio_cdmx = recordatorio.fecha_recordatorio.replace(tzinfo=tz_cdmx)
-            if (recordatorio_cdmx - current_date).days < 0:
-                recordatorio_cdmx += timedelta(days=1)
+            recordatorio_cdmx = fix_past_date_on_remainder(recordatorio_cdmx)
+            # if (recordatorio_cdmx - current_date).days < 0:
+            #     recordatorio_cdmx += timedelta(days=1)
             
             recordatorios_return.append(
                 Recordatorio(
@@ -57,17 +58,8 @@ def get_remainder_query_extractor(message, current_date):
             QUERY_REMAINDERS_PROMPT.format(mensaje=message)
         )
 
-        logger.info("##################### RES #####################")
-        logger.info(res)
-        logger.info("###############################################")
-
         start_date, end_date = calcular_rango_fechas(res.rango_solicitado, current_date, res)
 
-        logger.info("##################### RANGO FECHAS #####################")
-        logger.info(start_date)
-        logger.info(end_date)
-        logger.info("########################################################")
-        
         remainder_query = {
             "start_date": start_date.date(),
             "end_date": end_date.date(),
