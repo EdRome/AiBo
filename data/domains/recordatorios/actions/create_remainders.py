@@ -2,7 +2,7 @@ import logging
 from cloud_task.cloud_task import schedule_remainder_task
 from ..repository import insert_remainder
 from ..llm.extractor import get_remainder_data
-from config.utils import formatear_fecha_humana
+from config.utils import formatear_fecha_humana, pick_random_number
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +17,8 @@ class CreateRemaindersAction:
             recordatorios = self._process_remainder_text(memory, message, current_date)
             _ = [insert_remainder(recordatorio, db_session) for recordatorio in recordatorios]
 
-            return_obj['transicion'] = "confirmacion_registro"
+            num = pick_random_number()
+            return_obj['transicion'] = f"confirmacion_registro_{str(num)}"
             return_obj['mensaje'] = {
                 "lista_detalle": "\n".join(["-" + recordatorio.recordatorio + " " + formatear_fecha_humana(recordatorio.fecha_recordatorio) for recordatorio in recordatorios])
             }

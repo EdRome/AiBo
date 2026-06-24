@@ -1,6 +1,7 @@
 import logging
 from ..repository import crear_venta
 from ..llm.extractor import get_sales_data, get_image_content
+from config.utils import pick_random_number
 
 logger = logging.getLogger(__name__)
 
@@ -39,8 +40,9 @@ class CreateSalesAction:
                 venta_id = crear_venta(sales_data, db_session, current_date)
 
             if venta_id and detalle and total:
+                num = pick_random_number()
                 return_obj['mensaje'] = {'lista_detalle':detalle, 'total': str(total)}
-                return_obj['transicion'] = 'confirmacion_registro'
+                return_obj['transicion'] = f'confirmacion_registro_{str(num)}'
             else:
                 logger.error(f"Falta información como venta_id, detalle y/o total")
                 return_obj['transicion'] = 'error_registro'

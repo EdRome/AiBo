@@ -37,12 +37,6 @@ class AiBoDirector:
             },
             'bienvenida': Bienvenida()
         }
-        self.actions_aplanado = {
-            'registrar_venta': CreateSalesAction(),
-            'consultar_venta': QuerySalesAction(),
-            'registrar_recordatorio': CreateRemaindersAction(),
-            'consultar_recordatorio': QueryRemaindersAction(),
-        }
         # self.db_session = get_session()
         
     def execute_logic(self, memory, current_date, db_session):
@@ -79,9 +73,9 @@ class AiBoDirector:
 
         elif message_type == 'text' and intention == "":
             # Envia el menú
+            self._plan_and_execute(full_message, memory, db_session, current_date)
             send_transition(db_session, memory.user_id, "IDLE", None)
-            # self._plan_and_execute(full_message, memory, db_session, current_date)
-            # memory.reset_active_context()
+            memory.reset_active_context()
 
         else:
             logger.warning(f"Intención no implementada o entendida\n{memory.active_context}\n{message_type}\n{intention}")
@@ -97,8 +91,7 @@ class AiBoDirector:
             action_res = action.execute(memory, message, db_session=db_session, current_date=current_date)
         else:
             subintention = self.llm_layer.identify_action(message, intention) # Identifica el tipo de action que va a ejecutar
-            logger.info(f"Acción {subintention}")
-
+            
             action = self.actions[intention][subintention]
             action_res = action.execute(memory, message, db_session=db_session, current_date=current_date)
 
@@ -109,25 +102,25 @@ class AiBoDirector:
         return transicion, mensaje, memory
 
     def _plan_and_execute(self, message, memory, db_session, current_date):
-        execution_results = []
         execution_plan = self.llm_layer.split_tasks(message)
 
-        logger.info("Plan de ejecución")
-        logger.info(execution_plan)
-
         for task in execution_plan:
-            action_name = task['action']
-            phrase = task['phrase']
+            if task['action'] == 'menu':
+                send_transition(db_session, memory.user_id, "IDLE", None)
+                break
+            else:
+                context, action_name = task['action'].split(".")
+                phrase = task['phrase']
 
-            logger.info(f"Ejecutando accion {action_name}")
-            action = self.actions_aplanado[action_name]
-            action_res = action.execute(memory, phrase, db_session=db_session, current_date=current_date)
-            memory = action_res.get('memory', memory)
-            mensaje = action_res.get('mensaje', {})
-            transicion = action_res.get('transicion', '')
+                logger.info(f"Ejecutando accion {task['action']}")
+                
+                action = self.actions[context][action_name]
+                action_res = action.execute(memory, phrase, db_session=db_session, current_date=current_date)
+                memory = action_res.get('memory', memory)
+                mensaje = action_res.get('mensaje', {})
+                transicion = action_res.get('transicion', '')
 
-            send_transition(db_session, memory.user_id, memory.active_context, transicion, **mensaje)
-    
-    # def _prepara_respuesta(self, mensajes):
-    #     pass
+                send_transition(db_session, memory.user_id, context, transicion, **mensaje)
+
+                memory.reset_active_context()
 

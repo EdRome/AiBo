@@ -44,6 +44,8 @@
             "error_registro": "Parece que hoy no eres la única que necesita un respiro; mis servidores acaban de pedir cinco minutos. Tu comando fue perfecto, hasta la mejor tecnología se pone nerviosa con una jefa tan exigente.🙊\n\nYa mandé a mis ingenieros a despertar los cables. Aprovechemos este micro-segundo para que tú también tomes un trago de agua y relajes los hombros.\nTodo estará blindado y de regreso antes de que te des cuenta💪",
             "error_consulta": "Uyy... creo que acabo de tropezar con la conexión.🫨 ¡Es broma! Pero sí tuvimos un pequeño hipo interno. Tú eres impecable en lo tuyo, la falla ha sido totalmente mía.\n\nAsí como tú respaldas a tus clientas con el mejor servicio, mi equipo técnico ya está detrás de bambalinas solucionando este inconveniente para ti.👍",
             "confirmacion_registro": "🎯 ¡Si!  Registro perfecto.  Tienes luz verde para otra tarea si quieres.  El control se siente bien, ¿verdad?\n\nDetalle\n{lista_detalle}\n━━━━━━━ \n💰 TOTAL: {total}",
+            "confirmacion_registro_1": "🎯 ¡Si!  Registro perfecto.  Tienes luz verde para otra tarea si quieres.  El control se siente bien, ¿verdad?\n\nDetalle\n{lista_detalle}\n━━━━━━━ \n💰 TOTAL: {total}",
+            "confirmacion_registro_2": "💸  ¡Amo ese sonido! Tus números están a salvo. Eres la dueña absoluta de lo que produces.\n\nDetalle\n{lista_detalle}\n━━━━━━━ \n💰 TOTAL: {total}",
             "confirmacion_borrado": "",
             "confirmacion_consulta": "Muy bien!\nTus ventas de {periodo_solicitado} fueron de ${total} de {cantidad_transacciones} ventas.",
             "cero_consulta": "El sistema está en calma por ahora.  🧘Aún no tenemos registros de ventas para {periodo_solicitado}, pero los grandes imperios también tienen horas lentas. ¿Quieres que aprovechemos para registrar una cita o una venta pendiente? 🤓Un día lento no define tu maestría técnica, seguimos construyendo."
@@ -53,12 +55,20 @@
             "error_registro": "🕵️‍♀️  ¡Misterio en el sistema! Mi varita digital no logró descifrar ese último dato, pero las prisas nos pasan a todas.  ¿Intentamos escribirlo de nuevo paso a paso? O si andas a mil, lo dejamos para después.  El caos es normal, organizarlo es nuestro superpoder.",
             "error_consulta": "Se cruzó un fantasma en el sistema.👻 No te preocupes, tus datos y tu esfuerzo están cien por ciento seguros conmigo; fue solo un cortocircuito de mi lado.\n\nPuedes estar tranquila de que quedara arreglado, mientras tú te enfocas en lo que mejor sabes hacer: crear magia en tu negocio💖",
             "confirmacion_registro": "✨ Magia hecha. Todo anotado en tu ecosistema. ¿Seguimos con otra misión o te vas a tomar ese merecido café?  Delegar la memoria a la tecnología es de expertas\n\nDetalle\n{lista_detalle}",
+            "confirmacion_registro_1": "✨ Magia hecha. Todo anotado en tu ecosistema. ¿Seguimos con otra misión o te vas a tomar ese merecido café?  Delegar la memoria a la tecnología es de expertas\n\nDetalle\n{lista_detalle}",
+            "confirmacion_registro_2": "💎  ¡Impecable!  Un pendiente menos flotando en tu mente. Aceptar el orden es el paso final hacia tu tranquilidad.\n\nDetalle\n{lista_detalle}",
             "confirmacion_borrado": "",
             "confirmacion_consulta": "Muy bien!\nTus recordatorios para {periodo_solicitado} son \n{lista_recordatorios}",
-            "cero_consulta": "El sistema está en calma por ahora.  🧘Aún no tenemos recordatorios para {periodo_solicitados}, pero los grandes imperios también tienen horas lentas. ¿Quieres que aprovechemos para registrar una cita o una venta pendiente? 🤓Un día lento no define tu maestría técnica, seguimos construyendo."
+            "cero_consulta": "El sistema está en calma por ahora.  🧘Aún no tenemos recordatorios pendientes para {periodo_solicitado}, pero los grandes imperios también tienen horas lentas. ¿Quieres que aprovechemos para registrar una cita o una venta pendiente? 🤓Un día lento no define tu maestría técnica, seguimos construyendo."
         },
         "errores": {
             "generico": "Parece que hoy no eres la única que necesita un respiro; mis servidores acaban de pedir cinco minutos. Tu comando fue perfecto, hasta la mejor tecnología se pone nerviosa con una jefa tan exigente.🙊\n\nYa mandé a mis ingenieros a despertar los cables. Aprovechemos este micro-segundo para que tú también tomes un trago de agua y relajes los hombros.\nTodo estará blindado y de regreso antes de que te des cuenta💪"
+        },
+        "interacciones": {
+            "generico_ok_1": "",
+            "generico_ok_2": "",
+            "generico_gracias_1": "",
+            "generico_gracias_2": ""
         }
     }
 }
