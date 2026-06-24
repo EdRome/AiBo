@@ -2,7 +2,7 @@ import logging
 from cloud_task.cloud_task import schedule_remainder_task
 from ..repository import insert_remainder
 from ..llm.extractor import get_remainder_data
-from config.utils import formatear_fecha_humana, pick_random_number
+from config.utils import formatear_fecha_humana, pick_random_number, remainders_schedule
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +34,21 @@ class CreateRemaindersAction:
         try:
             remainder_data = get_remainder_data(message, memory.user_id, current_date)
             for recordatorio in remainder_data:
+                first_remainder, second_remainder = remainders_schedule(recordatorio.fecha_recordatorio, current_date)
+                if first_remainder is not None:
+                    schedule_remainder_task(
+                        memory.user_id,
+                        first_remainder,
+                        recordatorio.recordatorio
+                    )
+
+                if second_remainder is not None:
+                    schedule_remainder_task(
+                        memory.user_id,
+                        second_remainder,
+                        recordatorio.recordatorio
+                    )
+
                 task_id = schedule_remainder_task(
                     memory.user_id, 
                     recordatorio.fecha_recordatorio,

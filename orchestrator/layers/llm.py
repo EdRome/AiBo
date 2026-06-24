@@ -7,7 +7,7 @@ from config.prompts import INSTRUCCION_IDIOMA, CONTEXTO_ASISTENTE
 logger = logging.getLogger(__name__)
 
 EXTRAER_INTENCION_PROMPT = """Debes extraer la intención del mensaje del usuario.
-La intención puede ser 'registrar_venta','consultar_venta','registrar_recordatorio','consultar_recordatorio' o 'menu'. 
+La intención puede ser 'registrar_venta','consultar_venta','registrar_recordatorio','consultar_recordatorio', 'gracias' o 'menu'. 
 Por defecto, la intención es 'menu'.
 Regresa solamente la intención y nada más. Este es el mensaje {mensaje}"""
 
@@ -53,6 +53,8 @@ class LLMLayer:
             unidecoded_message = unidecode(message).strip().lower()
             if unidecoded_message == 'menu' or unidecoded_message == 'hola':
                 return [TaskFragment(action="menu")]
+            # elif unidecoded_message in ['gracias', 'ok']:
+            #     return [TaskFragment(action="agradecimiento", phrase=unidecoded_message)]
             
             # El LLM devuelve directamente un objeto Pydantic
             task_planer = self.model.with_structured_output(ExecutionPlan)
@@ -85,6 +87,8 @@ class LLMLayer:
                 return 'consultar_recordatorio'
             else:
                 return 'registrar_recordatorio'
+        # elif unidecoded_message in ['gracias','ok']:
+        #     return 'agradecimiento'
         elif unidecoded_message in ['hola','menu','ola','.']:
             return 'IDLE'
         else:
@@ -108,6 +112,7 @@ class LLMLayer:
             consultar_recordatorios = filter(lambda task: task["action"] == "recordatorios.consultar_recordatorio", action_plan)
             crear_venta = filter(lambda task: task["action"] == "venta.registrar_venta", action_plan)
             consultar_venta = filter(lambda task: task["action"] == "venta.consultar_venta", action_plan)
+            # agradecimiento = filter(lambda task: task["action"] == "agradecimiento", action_plan)
 
             # SOLO PARA CREAR RECORDATORIOS: Itera la lista y crea una única acción para crear recordatorio con todos los recordatorios.
             # El manejo de la separación se delega al action create_remainders.
@@ -121,7 +126,7 @@ class LLMLayer:
 
                 crear_recordatorios = [TaskFragment(action=action, phrase=phrase.strip(), priority=1).model_dump()]
 
-                return crear_recordatorios+list(crear_venta)+list(consultar_recordatorios)+list(consultar_venta)
+                return crear_recordatorios+list(crear_venta)+list(consultar_recordatorios)+list(consultar_venta)#+list(agradecimiento)
             else:
                 return action_plan
         except Exception as e:

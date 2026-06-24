@@ -9,6 +9,7 @@ from cloud_task.cloud_task import schedule_inactivity_task, delete_inactivity_ta
 from orchestrator.Orchestrator import AiBoDirector
 from data.domains.mensajes import insert_message, Message
 from data.domains.memoria import Memory, GlobalMemory, get_memory, insert_memory, update_memory
+from data.domains.recordatorios import get_remainder_by_task_id, update_remainder
 from core.services.whatsapp import send_whatsapp_message
 from data.config.database import get_db, db_session
 from config.utils import get_current_date
@@ -36,8 +37,13 @@ def remainder():
         data = request.get_json()
         sender = data.get('sender')
         message = data.get('message')
+        task_id = data.get('task_id')
 
-        # memory = get_memory(sender)
+        with get_db() as db:
+            remainder = get_remainder_by_task_id(task_id, db)
+            if remainder is not None:
+                remainder.status = 'completed'
+                update_remainder(remainder)
 
         send_whatsapp_message(
             sender,
@@ -50,7 +56,7 @@ def remainder():
 
     return make_response(jsonify({
         'status': 'success',
-        'message': 'Resumen de ventas ejecutado correctamente'
+        'message': 'Recordatorio enviado correctamente'
     }), 200)
 
 @app.route('/consume_message', methods=['POST'])

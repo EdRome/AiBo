@@ -45,15 +45,16 @@ def delete_inactivity_task(task_id: Optional[str] = None, phone_number: Optional
         logger.error(f"Error al eliminar la tarea de inactividad: {e}")
 
 def schedule_remainder_task(phone_number: str, fecha_recordatorio: datetime, message: str):
-    tz_cdmx = ZoneInfo("America/Mexico_City")
-    current_date = datetime.now(tz_cdmx)
+    # tz_cdmx = ZoneInfo("America/Mexico_City")
+    # current_date = datetime.now(tz_cdmx)
 
     timestamp = timestamp_pb2.Timestamp()
     timestamp.FromDatetime(fecha_recordatorio)
-    
-    payload = {'sender': phone_number, 'message': message}
 
     task_id = f"{uuid.uuid4()}-recordatorio-{phone_number}"
+
+    payload = {'sender': phone_number, 'message': message, 'task_id': task_id}
+
     task_name = f"projects/{project}/locations/{location}/queues/{queue}/tasks/{task_id}"
     task = {
         'name': task_name,
