@@ -253,6 +253,7 @@ def remainders_schedule(final_datetime, reference_datetime):
     diferencia = (final_datetime - reference_datetime).in_hours()
 
     first_remainder, second_remainder = None, None
+    type_first_remainder, type_second_remainder = None, None
     # Si el recordatorio se programó con más de 24 horas
     if diferencia >= 24:
         # El primer recordatorio se programa con 12 horas de anticipación
@@ -268,6 +269,9 @@ def remainders_schedule(final_datetime, reference_datetime):
         # Programa el segundo recordatorio 1 hora antes del recordatorio
         second_remainder = final_datetime.subtract(hours=1)
         second_remainder = second_remainder.set(minute=0)
+
+        type_first_remainder = "falta_1_dia"
+        type_second_remainder = "falta_1_hora"
 
     # Si el recordatorio se programa con más de 12 horas
     elif diferencia >= 12:
@@ -285,9 +289,13 @@ def remainders_schedule(final_datetime, reference_datetime):
         second_remainder = final_datetime.subtract(hours=1)
         second_remainder = second_remainder.set(minute=0)
 
+        type_first_remainder = "falta_1_dia"
+        type_second_remainder = "falta_1_hora"
+
     # Para recordatorios con menos de 1 hora de anticipación, programa el recordatorio 5 minutos antes
     elif diferencia <= 1:
         first_remainder = final_datetime.subtract(minutes=5)
+        type_first_remainder = "faltan_5_minutos"
 
     # Para cualquier otro caso, programa el primer recordatorio 1 hora antes y 5 minutos antes
     else:
@@ -295,8 +303,10 @@ def remainders_schedule(final_datetime, reference_datetime):
         first_remainder = first_remainder.set(minute=0)
 
         second_remainder = final_datetime.subtract(minutes=5)
+        type_first_remainder = "falta_1_hora"
+        type_second_remainder = "faltan_5_minutos"
 
 
     returned_first_remainder = datetime.fromtimestamp(first_remainder.timestamp(), pendulum.tz.Timezone("America/Mexico_City"))
     returned_second_remainder = datetime.fromtimestamp(second_remainder.timestamp(), pendulum.tz.Timezone("America/Mexico_City")) if second_remainder is not None else None
-    return returned_first_remainder, returned_second_remainder
+    return returned_first_remainder, type_first_remainder, returned_second_remainder, type_second_remainder
