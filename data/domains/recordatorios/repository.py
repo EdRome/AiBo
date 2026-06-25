@@ -27,6 +27,20 @@ def insert_remainder(recordatorio: RecordatorioBase, db_session=None):
         logger.error(f"Error al guardar recordatorio: {e}")
         return None
 
+def get_remainder_by_task_id(task_id, db_session=None):
+    try:
+        db = db_session or get_session()
+        recordatorio = db.query(
+            RecordatorioSQL
+        ).where(
+            RecordatorioSQL.task_id == task_id
+        ).first()
+
+        return recordatorio
+    except Exception as e:
+        logger.error(f"Error al buscar recordatorio: {e}")
+        return None
+
 def update_remainder(recordatorio: RecordatorioBase, db_session=None):
     try:
         db = db_session or get_session()

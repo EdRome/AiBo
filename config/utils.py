@@ -217,5 +217,96 @@ def formatear_fecha_humana_intervalo(start_date, end_date):
     else:
         return f"{start_day} de {start_month} al {end_day} de {end_month}"
 
-def pick_random_number():
-    return random.randint(1,2)
+def pick_random_number(rango1=1, rango2=2):
+    return random.randint(rango1, rango2)
+
+def pick_random_text(text_list):
+    return random.choice(text_list)
+
+def time_diference(final_datetime, referente_datetime=None):
+    """Resta la fecha final con respecto a la fecha de referencia. 
+    Si la fecha de referencia es None, entonces compara contra el momento actual
+    """
+
+    if referente_datetime is None:
+        referente_datetime = pendulum.parse(get_current_date().isoformat(), tz="America/Mexico_City")
+
+    if isinstance(final_datetime, datetime):
+        final_datetime = pendulum.parse(final_datetime.isoformat(), tz="America/Mexico_City")
+
+    return (final_datetime - referente_datetime).in_hours()
+
+def remainders_schedule(final_datetime, reference_datetime):
+    """Regresa la programación de recordatorios siguiente esta lógica:
+    - Si el recordatorio ocurre en más de 24 horas, avisa 12 horas y 1 hora antes
+    - Si el recordatorio ocurre en más de 12 horas, avisa 8 horas y 1 hora antes
+    - Si falta menos de 1 hora, avisa 5 minutos antes
+    - En cualquier otro caso, avisa 1 hora antes y 5 minutos antes
+    """
+
+    if reference_datetime is None:
+        reference_datetime = pendulum.parse(get_current_date().isoformat(), tz="America/Mexico_City")
+
+    elif isinstance(final_datetime, datetime):
+        final_datetime = pendulum.parse(final_datetime.isoformat(), tz="America/Mexico_City")
+
+    diferencia = (final_datetime - reference_datetime).in_hours()
+
+    first_remainder, second_remainder = None, None
+    type_first_remainder, type_second_remainder = None, None
+    # Si el recordatorio se programó con más de 24 horas
+    if diferencia >= 24:
+        # El primer recordatorio se programa con 12 horas de anticipación
+        first_remainder = final_datetime.subtract(hours=12)
+
+        # Si el recordatorio se programaría después de las 10, corrige el recordatorio para ser a las 10pm
+        if first_remainder.hour > 22:
+            first_remainder = first_remainder.set(hour=22, minute=0)
+        # Pero si el recordatorio se programaría antes de las 6 am, corrige el recordatorio para ser a las 6am
+        elif first_remainder.hour < 6:
+            first_remainder = first_remainder.set(hour=6, minute=0)
+
+        # Programa el segundo recordatorio 1 hora antes del recordatorio
+        second_remainder = final_datetime.subtract(hours=1)
+        second_remainder = second_remainder.set(minute=0)
+
+        type_first_remainder = "falta_1_dia"
+        type_second_remainder = "falta_1_hora"
+
+    # Si el recordatorio se programa con más de 12 horas
+    elif diferencia >= 12:
+        # El primer recordatorio se programa con 8 horas de anticipación
+        first_remainder = final_datetime.subtract(hours=8, minute=0)
+
+        # Si el recordatorio se programaría después de las 10pm, corrige el recordatorio para ser a las 10pm
+        if first_remainder.hour > 22:
+            first_remainder = first_remainder.set(hour=22, minute=0)
+        # Pero si el recordatorio se programaría antes de las 6am, corrige el recordatorio para ser a las 6am
+        elif first_remainder.hour < 6:
+            first_remainder = first_remainder.set(hour=6, minute=0)
+        
+        # Programa el segundo recordatorio 1 hora antes del recordatorio
+        second_remainder = final_datetime.subtract(hours=1)
+        second_remainder = second_remainder.set(minute=0)
+
+        type_first_remainder = "falta_1_dia"
+        type_second_remainder = "falta_1_hora"
+
+    # Para recordatorios con menos de 1 hora de anticipación, programa el recordatorio 5 minutos antes
+    elif diferencia <= 1:
+        first_remainder = final_datetime.subtract(minutes=5)
+        type_first_remainder = "faltan_5_minutos"
+
+    # Para cualquier otro caso, programa el primer recordatorio 1 hora antes y 5 minutos antes
+    else:
+        first_remainder = final_datetime.subtract(hours=1)
+        first_remainder = first_remainder.set(minute=0)
+
+        second_remainder = final_datetime.subtract(minutes=5)
+        type_first_remainder = "falta_1_hora"
+        type_second_remainder = "faltan_5_minutos"
+
+
+    returned_first_remainder = datetime.fromtimestamp(first_remainder.timestamp(), pendulum.tz.Timezone("America/Mexico_City"))
+    returned_second_remainder = datetime.fromtimestamp(second_remainder.timestamp(), pendulum.tz.Timezone("America/Mexico_City")) if second_remainder is not None else None
+    return returned_first_remainder, type_first_remainder, returned_second_remainder, type_second_remainder

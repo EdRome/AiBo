@@ -3,6 +3,7 @@ import logging
 from data.domains.ventas import CreateSalesAction, QuerySalesAction
 from data.domains.recordatorios import CreateRemaindersAction, QueryRemaindersAction
 from data.domains.tutorial import Bienvenida
+from data.domains.conversacion import Agradecimiento
 from langchain_google_genai import ChatGoogleGenerativeAI
 from .layers.llm import LLMLayer
 from .Gamification import GamificationManager
@@ -35,7 +36,8 @@ class AiBoDirector:
                 'registrar_recordatorio': CreateRemaindersAction(),
                 'consultar_recordatorio': QueryRemaindersAction(),
             },
-            'bienvenida': Bienvenida()
+            'bienvenida': Bienvenida(),
+            'agradecimiento': Agradecimiento()
         }
         # self.db_session = get_session()
         
@@ -108,6 +110,14 @@ class AiBoDirector:
             if task['action'] == 'menu':
                 send_transition(db_session, memory.user_id, "IDLE", None)
                 break
+            # elif task['action'] == 'agradecimiento':
+            #     action = self.actions[task['action']]
+            #     action_res = action.execute(memory, task['phrase'])
+            #     memory = action_res.get('memory', memory)
+            #     mensaje = action_res.get('mensaje', {})
+            #     transicion = action_res.get('transicion', '')
+
+            #     send_transition(db_session, memory.user_ud, 'interacciones', transicion, **mensaje)
             else:
                 context, action_name = task['action'].split(".")
                 phrase = task['phrase']

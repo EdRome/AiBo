@@ -9,7 +9,8 @@ from cloud_task.cloud_task import schedule_inactivity_task, delete_inactivity_ta
 from orchestrator.Orchestrator import AiBoDirector
 from data.domains.mensajes import insert_message, Message
 from data.domains.memoria import Memory, GlobalMemory, get_memory, insert_memory, update_memory
-from core.services.whatsapp import send_whatsapp_message
+from data.domains.recordatorios import get_remainder_by_task_id, update_remainder
+from core.services.whatsapp import send_whatsapp_message, send_transition
 from data.config.database import get_db, db_session
 from config.utils import get_current_date
 
@@ -36,13 +37,28 @@ def remainder():
         data = request.get_json()
         sender = data.get('sender')
         message = data.get('message')
+        task_id = data.get('task_id')
+        fecha_recordatorio = data.get("fecha_final_recordatorio")
+        tipo_recordatorio = data.get("tipo_recordatorio")
 
-        # memory = get_memory(sender)
+        with get_db() as db:
+            remainder = get_remainder_by_task_id(task_id, db)
+            if remainder is not None:
+                remainder.status = 'completed'
+                update_remainder(remainder)
 
-        send_whatsapp_message(
-            sender,
-            "📣 RECORDATORIO:\n"+message
-        )
+            if fecha_recordatorio is not None and tipo_recordatorio is not None:
+                send_transition(
+                    db, sender, "recordatorios", tipo_recordatorio, **{"recordatorio": message, "fecha_recordatorio": fecha_recordatorio}
+                )
+            elif fecha_recordatorio is None and tipo_recordatorio is not None:
+                send_transition(
+                    db, sender, "recordatorios", tipo_recordatorio, **{"recordatorio": message}
+                )
+            else:
+                send_transition(
+                    db, sender, "recordatorios", "envia_recordatorio", **{"recordatorio": message}
+                )
 
     except Exception as e:
         logger.error(f"Error al enviar el recordatorio: {e}")
@@ -50,7 +66,7 @@ def remainder():
 
     return make_response(jsonify({
         'status': 'success',
-        'message': 'Resumen de ventas ejecutado correctamente'
+        'message': 'Recordatorio enviado correctamente'
     }), 200)
 
 @app.route('/consume_message', methods=['POST'])
@@ -171,13 +187,25 @@ def message():
 
 @app.route('/test', methods=['POST'])
 def test():
-    from orchestrator.Orchestrator import AiBoDirector
     try:
-        form_data = request.form
-        body = form_data.get('Body', '')
-
-        memory = get_memory("5215528092514")
-        AiBoDirector(memory).execute_logic(body)
+        data = request.get_json()
+        sender = data.get('sender')
+        message = data.get('message')
+        fecha_recordatorio = data.get("fecha_final_recordatorio")
+        tipo_recordatorio = data.get("tipo_recordatorio")
+        with get_db() as db:
+            if fecha_recordatorio is not None and tipo_recordatorio is not None:
+                send_transition(
+                    db, sender, "recordatorios", tipo_recordatorio, **{"recordatorio": message, "fecha_recordatorio": fecha_recordatorio}
+                )
+            elif fecha_recordatorio is None and tipo_recordatorio is not None:
+                send_transition(
+                    db, sender, "recordatorios", tipo_recordatorio, **{"recordatorio": message}
+                )
+            else:
+                send_transition(
+                    db, sender, "recordatorios", "envia_recordatorio", **{"recordatorio": message}
+                )
     except Exception as e:
         logger.error(e)
 
