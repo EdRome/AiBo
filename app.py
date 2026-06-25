@@ -11,6 +11,7 @@ from data.domains.mensajes import insert_message, Message
 from data.domains.memoria import Memory, GlobalMemory, get_memory, insert_memory, update_memory
 from data.domains.recordatorios import get_remainder_by_task_id, update_remainder
 from core.services.whatsapp import send_whatsapp_message, send_transition
+from core.services.google import oauth_callback, generate_auth_url
 from data.config.database import get_db, db_session
 from config.utils import get_current_date
 
@@ -29,6 +30,31 @@ def shutdown_session(exception=None):
     sin importar si fue exitosa o lanzó una excepción.
     """
     db_session.remove()  # Limpia la sesión del hilo y libera la conexión
+
+@app.route('/oauth2callback', methods=["GET"])
+def oauth2callback():
+    try:
+        code = request.query_params.get("code")
+        user_id = request.query_params.get("state")
+
+        if not code or not user_id:
+            return make_response(jsonify({
+                'status': 'sucess',
+                'message': 'Parámetros insuficientes'
+            }), 200)
+
+        message = oauth_callback(code, user_id)
+        if message is not None:
+            send_whatsapp_message(
+                user_id,
+                message
+            )
+    except Exception as e:
+        logger.error(f"Error durante el callback de oauth {e}")
+
+    return make_response(jsonify({
+        'status': 'sucess'
+    }), 200)
 
 @app.route('/remainder', methods=['POST'])
 def remainder():
@@ -187,31 +213,24 @@ def message():
 
 @app.route('/test', methods=['POST'])
 def test():
+    return_json = {}
     try:
-        data = request.get_json()
-        sender = data.get('sender')
-        message = data.get('message')
-        fecha_recordatorio = data.get("fecha_final_recordatorio")
-        tipo_recordatorio = data.get("tipo_recordatorio")
-        with get_db() as db:
-            if fecha_recordatorio is not None and tipo_recordatorio is not None:
-                send_transition(
-                    db, sender, "recordatorios", tipo_recordatorio, **{"recordatorio": message, "fecha_recordatorio": fecha_recordatorio}
-                )
-            elif fecha_recordatorio is None and tipo_recordatorio is not None:
-                send_transition(
-                    db, sender, "recordatorios", tipo_recordatorio, **{"recordatorio": message}
-                )
-            else:
-                send_transition(
-                    db, sender, "recordatorios", "envia_recordatorio", **{"recordatorio": message}
-                )
+        form_data = request.form
+        body = form_data.get('Body', '')
+        user_id = '5215528092514'
+        auth_url = generate_auth_url(user_id)
+        return_json = {
+            'status':'success',
+            'auth_url': auth_url
+        }
     except Exception as e:
         logger.error(e)
+        return_json = {
+            'status': 'error',
+            'error': e
+        }
 
-    return make_response(jsonify({
-        'status': 'success'
-    }), 200)
+    return make_response(jsonify(return_json), 200)
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8080))
