@@ -34,8 +34,8 @@ def shutdown_session(exception=None):
 @app.route('/oauth2callback', methods=["GET"])
 def oauth2callback():
     try:
-        code = request.query_params.get("code")
-        user_id = request.query_params.get("state")
+        code = request.args.get("code")
+        user_id = request.args.get("state")
 
         if not code or not user_id:
             return make_response(jsonify({

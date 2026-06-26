@@ -19,7 +19,7 @@ def get_credentials(user_id: str, db_session=None):
         logger.error(f"Error al obtener las credenciales {e}")
         return None
     
-def update_refresh_token(user_id: str, google_token_data: dict, db_session=None):
+def update_refresh_token(user_id: str, google_token_data: str, db_session=None):
     logger.info("Actualizando refresh token")
     db = db_session or get_session()
     try:
