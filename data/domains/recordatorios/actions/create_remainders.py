@@ -14,7 +14,8 @@ class CreateRemaindersAction:
 
         try:
             logger.info("2.2. Procesando información del recordatorio...")
-            recordatorios = self._process_remainder_text(memory, message, current_date)
+            remainder_data = self._process_remainder_text(memory, message, current_date)
+            recordatorios = self._schedule_remainders(remainder_data, memory, current_date)
             _ = [insert_remainder(recordatorio, db_session) for recordatorio in recordatorios]
 
             num = pick_random_number()
@@ -32,39 +33,41 @@ class CreateRemaindersAction:
     def _process_remainder_text(self, memory, message, current_date):
         logger.info("2.2.1. Procesando texto del recordatorio...")
         try:
-            remainder_data = get_remainder_data(message, memory.user_id, current_date)
-            for recordatorio in remainder_data:
-                first_remainder, type_first_remainder, second_remainder, type_second_remainder = \
-                        remainders_schedule(recordatorio.fecha_recordatorio, current_date)
-                humano_fecha_recordatorio = formatear_fecha_humana(recordatorio.fecha_recordatorio)
-                if first_remainder is not None:
-                    schedule_remainder_task(
-                        memory.user_id,
-                        first_remainder,
-                        recordatorio.recordatorio,
-                        humano_fecha_recordatorio,
-                        type_first_remainder
-                    )
-
-                if second_remainder is not None:
-                    schedule_remainder_task(
-                        memory.user_id,
-                        second_remainder,
-                        recordatorio.recordatorio,
-                        humano_fecha_recordatorio,
-                        type_second_remainder
-                    )
-
-                task_id = schedule_remainder_task(
-                    memory.user_id, 
-                    recordatorio.fecha_recordatorio,
-                    recordatorio.recordatorio
-                )
-                recordatorio.task_id = task_id
-                recordatorio.calcula_delta()
-            
+            remainder_data = get_remainder_data(message, memory.user_id, current_date)            
             return remainder_data
         except Exception as e:
             logger.error(f"Error al procesar el texto del recordatorio {e}")
             return None
 
+    def _schedule_remainders(self, remainder_data, memory, current_date):
+        for recordatorio in remainder_data:
+            first_remainder, type_first_remainder, second_remainder, type_second_remainder = \
+                    remainders_schedule(recordatorio.fecha_recordatorio, current_date)
+            humano_fecha_recordatorio = formatear_fecha_humana(recordatorio.fecha_recordatorio)
+            if first_remainder is not None:
+                schedule_remainder_task(
+                    memory.user_id,
+                    first_remainder,
+                    recordatorio.recordatorio,
+                    humano_fecha_recordatorio,
+                    type_first_remainder
+                )
+
+            if second_remainder is not None:
+                schedule_remainder_task(
+                    memory.user_id,
+                    second_remainder,
+                    recordatorio.recordatorio,
+                    humano_fecha_recordatorio,
+                    type_second_remainder
+                )
+
+            task_id = schedule_remainder_task(
+                memory.user_id, 
+                recordatorio.fecha_recordatorio,
+                recordatorio.recordatorio
+            )
+            recordatorio.task_id = task_id
+            recordatorio.calcula_delta()
+        
+        return remainder_data

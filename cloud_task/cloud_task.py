@@ -17,6 +17,7 @@ base_url = os.environ.get('CLOUD_TASK_BASE_URL', '')
 url = base_url + '/consume_message'
 url_summary = base_url + '/sales_summary'
 url_remainder = base_url + '/remainder'
+url_inactivity_review = base_url + "/recurrencia"
 service_account = "aibo-sql@gen-lang-client-0680947061.iam.gserviceaccount.com"
 
 client = tasks_v2.CloudTasksClient()
@@ -82,7 +83,6 @@ def schedule_remainder_task(phone_number: str, fecha_recordatorio: datetime, mes
     response = client.create_task(request={'parent': parent, 'task': task})
     return task_id
 
-
 def schedule_sales_summary_task(phone_number: str):
     tasks = list_scheduled_tasks()
     for task in tasks:
@@ -121,6 +121,35 @@ def schedule_sales_summary_task(phone_number: str):
         delete_inactivity_task(task_id, phone_number)
     except Exception as e:
         logger.error(f"Error al crear la tarea de inactividad: {e}")
+
+    response = client.create_task(request={'parent': parent, 'task': task})
+    return task_id
+
+def schedule_users_inactivity_review():
+    d = datetime.now() + timedelta(days=1)
+    timestamp = timestamp_pb2.Timestamp()
+    timestamp.FromDatetime(d)
+
+    phone_number = os.environ.get("TWILIO_WHATSAPP_NUMBER")
+
+    task_id = f"{uuid.uuid4()}-inactivity_review-{phone_number}"
+    task_name = f"projects/{project}/locations/{location}/queues/{queue}/tasks/{task_id}"
+    task = {
+        'name': task_name,
+        'http_request': {
+            'http_method': tasks_v2.HttpMethod.POST,
+            'url': url_inactivity_review,
+            'headers': {
+                'Content-Type': 'application/json'
+            },
+            'body': "",
+            'oidc_token': {
+                'service_account_email': service_account,
+                'audience': url_inactivity_review
+            }
+        },
+        'schedule_time': timestamp
+    }
 
     response = client.create_task(request={'parent': parent, 'task': task})
     return task_id

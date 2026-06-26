@@ -1,6 +1,15 @@
+import logging
+import os
+import requests
+from requests.auth import HTTPBasicAuth
 from datetime import datetime
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
+
+account_sid = os.environ.get("TWILIO_ACCOUNT_SID")
+account_token = os.environ.get("TWILIO_AUTH_TOKEN")
+
+logger = logging.getLogger(__name__)
 
 class GlobalMemory(BaseModel):
     nombre_emprendedor: str = Field(default="")
@@ -47,7 +56,19 @@ class Memory(BaseModel):
         }
 
     def get_message(self):
-        return "\n".join(self.local_state[self.active_context]['message'])
+        if self.get_message_type() != 'audio':
+            return "\n".join(self.local_state[self.active_context]['message'])
+        else:
+            try:
+                response = requests.get(
+                    self.local_state[self.active_context]['message'][0], 
+                    auth=HTTPBasicAuth(account_sid, account_token)
+                )
+                audio_data = response.content
+                return audio_data
+            except Exception as e:
+                logger.error("Error al obtener el audio")
+                logger.error(e)
 
     def append_message(self, message: str):
         try:
