@@ -2,17 +2,17 @@ import os
 import logging
 
 from flask_cors import CORS
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask import Flask, jsonify, request, make_response
-from cloud_task.cloud_task import schedule_inactivity_task, delete_inactivity_task
+from cloud_task.cloud_task import schedule_inactivity_task, delete_inactivity_task, schedule_users_inactivity_review
 
 from orchestrator.Orchestrator import AiBoDirector
 from data.domains.mensajes import insert_message, Message
-from data.domains.memoria import Memory, GlobalMemory, get_memory, insert_memory, update_memory
+from data.domains.memoria import Memory, GlobalMemory, get_memory, insert_memory, update_memory, get_2_more_days_last_interaction
 from data.domains.recordatorios import get_remainder_by_task_id, update_remainder
 from core.services.whatsapp import send_whatsapp_message, send_transition
 from data.config.database import get_db, db_session
-from config.utils import get_current_date
+from config.utils import get_current_date, pick_random_number
 
 app = Flask(__name__)
 CORS(app)
@@ -29,6 +29,59 @@ def shutdown_session(exception=None):
     sin importar si fue exitosa o lanzó una excepción.
     """
     db_session.remove()  # Limpia la sesión del hilo y libera la conexión
+
+@app.route('/recurrencia', methods=["POST"])
+def recurrencia():
+    try:
+        hoy = get_current_date()
+        with get_db() as db:
+            try:
+                inactive_users = get_2_more_days_last_interaction(hoy, db)
+                
+                hace_dos_dias = hoy - timedelta(days=2) 
+                hace_tres_dias = hoy - timedelta(days=3)
+                hace_cuatro_dias = hoy - timedelta(days=4)
+                hace_cinco_dias = hoy - timedelta(days=5)
+                hace_seis_dias = hoy - timedelta(days=6)
+                logger.info(f"Num inactive users {len(inactive_users)}")
+                for user in inactive_users:
+                    logger.info(f"Para la memoria {user.user_id}")
+                    # Hace 2 días que no tiene interacción pero no más de 3 días
+                    if hace_tres_dias < user.last_interaction <= hace_dos_dias:
+                        send_transition(db, user.user_id, "interacciones", "dos_dias_sin_interaccion")
+                        logger.info("Hace 2 días que no tiene interacción pero no más de 3 días")
+
+                    # Hace 3 días que no tiene interacción pero no más de 4 días
+                    elif hace_cuatro_dias < user.last_interaction <= hace_tres_dias:
+                        send_transition(db, user.user_id, "interacciones", "tres_dias_sin_interaccion")
+                        logger.info("Hace 3 días que no tiene interacción pero no más de 4 días")
+
+                    # Hace 4 días que no tiene interacción pero no más de 5 días
+                    elif hace_cinco_dias < user.last_interaction <= hace_cuatro_dias:
+                        send_transition(db, user.user_id, "interacciones", "cuatro_dias_sin_interaccion")
+                        logger.info("Hace 4 días que no tiene interacción pero no más de 5 días")
+
+                    # Hace 5 días o más que no tiene interacción
+                    elif hace_seis_dias < user.last_interaction <= hace_cinco_dias:
+                        num = pick_random_number(1,3)
+                        send_transition(db, user.user_id, "interacciones", f"cinco_dias_sin_interaccion_{str(num)}")
+                        logger.info("Hace 5 días o más que no tiene interacción")
+
+                    logger.info("Enviando menú")
+                    send_transition(db_session, user.user_id, "IDLE", None)
+                    user.reset_active_context()
+                    update_memory(user, db)
+            except Exception as e:
+                logger.error(f"Error al enviar mensaje de recurrencia {e}")
+
+        schedule_users_inactivity_review()
+    except Exception as e:
+        logger.error(f"Error al enviar mensajes de recurrencia {e}")
+
+    return make_response(jsonify({
+        'status': 'success',
+        'message': 'Recurrencia validada correctamente'
+    }), 200)
 
 @app.route('/remainder', methods=['POST'])
 def remainder():
@@ -89,7 +142,6 @@ def consume_message():
             if memory.task_name:
                 delete_inactivity_task(memory.task_name, sender)
 
-        
             orchestador = AiBoDirector()
             memory = orchestador.execute_logic(memory, current_date, db)
 
@@ -185,7 +237,7 @@ def message():
         'status': 'success'
     }), 200)
 
-@app.route('/test', methods=['POST'])
+# @app.route('/test', methods=['POST'])
 def test():
     try:
         data = request.get_json()

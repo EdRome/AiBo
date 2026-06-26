@@ -1,8 +1,10 @@
 import logging
+import base64
 from typing import List
 from pydantic import BaseModel
 from unidecode import unidecode
 from config.prompts import INSTRUCCION_IDIOMA, CONTEXTO_ASISTENTE
+from langchain_core.messages import HumanMessage
 
 logger = logging.getLogger(__name__)
 
@@ -43,35 +45,76 @@ class LLMLayer:
     def __init__(self, model_client):
         self.model = model_client
 
-    def split_tasks(self, message: str) -> List[dict]:
+    def split_tasks(self, message: str|bytes, message_type: str="text") -> List[dict]:
         """
         Divide el mensaje en fragmentos accionables.
         """
-        prompt = INSTRUCCION_IDIOMA + CONTEXTO_ASISTENTE + ROUTER_PROMPT.format(mensaje=message)
         
-        try:
-            unidecoded_message = unidecode(message).strip().lower()
-            if unidecoded_message == 'menu' or unidecoded_message == 'hola':
-                return [TaskFragment(action="menu")]
-            # elif unidecoded_message in ['gracias', 'ok']:
-            #     return [TaskFragment(action="agradecimiento", phrase=unidecoded_message)]
-            
+        try:            
             # El LLM devuelve directamente un objeto Pydantic
             task_planer = self.model.with_structured_output(ExecutionPlan)
-            plan = task_planer.invoke(prompt)
+            if message_type == "text":
+                prompt = INSTRUCCION_IDIOMA + CONTEXTO_ASISTENTE + ROUTER_PROMPT.format(mensaje=message)
+
+                unidecoded_message = unidecode(message).strip().lower()
+                if unidecoded_message == 'menu' or unidecoded_message == 'hola':
+                    return [TaskFragment(action="menu", phrase="menu", priority=1).model_dump()]
+                
+                plan = task_planer.invoke(prompt)
+
+            elif message_type == "audio":
+                audio_base64 = base64.b64encode(message).decode("utf-8")
+
+                prompt = INSTRUCCION_IDIOMA + CONTEXTO_ASISTENTE + ROUTER_PROMPT
+
+                message = HumanMessage(
+                    content=[
+                        {"type": "text", "text": prompt},
+                        {
+                            "type": "input_audio",
+                            "input_audio": {
+                                "data": audio_base64,
+                                "format": "audio/ogg"
+                            }
+                        }
+                    ]
+                )
+                plan = task_planer.invoke([message])
             
             # Convertimos a lista de diccionarios para el AiBoDirector
             action_plan = [task.model_dump() for task in plan.tasks]
             return self._organiza_plan(action_plan)
             
         except Exception as e:
-            print(f"Error en el Router: {e}")
+            logger.error(f"Error en el Router: {e}")
             # Fallback seguro: tratar todo como charla narrativa
             return [{"action": "charla_narrativa", "fragmento": message, "prioridad": 0}]
         
-    def identify_action(self, message, intention):
+    def identify_action(self, message, intention, message_type="text"):
         """Obtiene la intención del usuario"""
         logger.info("Identificando acción")
+        
+        if message_type == 'text':
+            return self._identify_text_action(message, intention)
+        elif message_type == 'audio':
+            return self._identify_audio_action(message)
+
+    def _identify_audio_action(self, message):
+        prompt = INSTRUCCION_IDIOMA + CONTEXTO_ASISTENTE + EXTRAER_INTENCION_PROMPT
+        audio_base64 = base64.b64encode(message).decode("utf-8")
+        message = HumanMessage(
+            content=[
+                {"type": "text", "text": prompt},
+                {
+                    "type": "media",
+                    "mime_type": "audio/ogg",
+                    "data": audio_base64
+                }
+            ]
+        )
+        return self.model.invoke([message])
+    
+    def _identify_text_action(self, message, intention):
         unidecoded_message = unidecode(message).strip().lower()
 
         words_in_message = set(unidecoded_message.split())
@@ -97,7 +140,7 @@ class LLMLayer:
                 CONTEXTO_ASISTENTE +
                 EXTRAER_INTENCION_PROMPT.format(mensaje=unidecoded_message)
             ).content
-        
+
     def _organiza_plan(self, action_plan):
         """Organiza el plan de acción, esto particulamente para cubrir un caso donde los recordatorios se confirman
         en distintos mensajes. Esto ocurre con este caso:

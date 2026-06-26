@@ -276,7 +276,7 @@ def remainders_schedule(final_datetime, reference_datetime):
     # Si el recordatorio se programa con más de 12 horas
     elif diferencia >= 12:
         # El primer recordatorio se programa con 8 horas de anticipación
-        first_remainder = final_datetime.subtract(hours=8, minute=0)
+        first_remainder = final_datetime.subtract(hours=8, minutes=0)
 
         # Si el recordatorio se programaría después de las 10pm, corrige el recordatorio para ser a las 10pm
         if first_remainder.hour > 22:

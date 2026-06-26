@@ -72,7 +72,14 @@
             "ok": "Me encanta que hayas llegado hasta aquí recuerda que aquí estaré atenta a tus pedidos",
             "ok_2": "",
             "gracias": "Gracias a ti! Cualquier duda, aquí estoy cuando me necesites",
-            "gracias_2": ""
+            "gracias_2": "",
+            "dos_dias_sin_interaccion": "¡Hola! He estado revisando mis archivos y te extraño por aquí. ¿Te ayudo a organizar algo pendiente para que tu día fluya mejor? 😉",
+            "tres_dias_sin_interaccion": "Sé que el ritmo del día a día puede ser intenso. ¡Aquí sigo lista para ayudarte!",
+            "cuatro_dias_sin_interaccion": "Siempre estaré aquí para cuando me necesites. No te presiones, tómate tu tiempo. 😊",
+            "cinco_dias_sin_interaccion_1": "¡Hola! Solo pasaba a recordarte que eres capaz de lograr todo lo que te propongas hoy. 🌟",
+            "cinco_dias_sin_interaccion_2": "Cada pequeño paso cuenta. ¡Estoy aquí para apoyarte cuando quieras! ✨",
+            "cinco_dias_sin_interaccion_3": "¿Cómo va todo? No olvides que eres una experta creando magia. ¡Tú puedes con esto y más! 💪",
+            "cinco_dias_sin_interaccion_4": "Un día a la vez. Estás haciendo un trabajo increíble, ¡no lo olvides!"
         }
     }
 }
