@@ -1,9 +1,10 @@
 import logging
+from datetime import timedelta
 from data.config.database import get_session
 from .schemas import Memory, GlobalMemory
 from .models import Memory as MemorySQL
 from .models import MemoriaEstados as MemoriaEstadosSQL
-from sqlalchemy import update
+from sqlalchemy import update, func, or_
 
 logger = logging.getLogger(__name__)
 
@@ -110,3 +111,30 @@ def insert_memory_state(memory_state, db_session=None):
         logger.error(f"Error al insertar el memory_state {e}")
         db.rollback()
         return False
+    
+def get_2_more_days_last_interaction(current_date, db_session=None):
+    db = db_session or get_session()
+    hace_dos_dias = current_date - timedelta(days=2)
+    hace_siete_dias = current_date - timedelta(days=7)
+    try:
+        memories = db.query(
+            MemorySQL
+        ).where(
+            func.timezone("America/Mexico_City", MemorySQL.last_interaction) <= hace_dos_dias,
+            func.timezone("America/Mexico_City", MemorySQL.last_interaction) >= hace_siete_dias
+        ).all()
+
+        return [Memory(
+                user_id=memory.user_id,
+                active_context=memory.active_context,
+                machine_stack=memory.machine_stack,
+                global_memory=GlobalMemory(**memory.global_memory),
+                local_state=memory.local_state,
+                last_interaction=memory.last_interaction,
+                task_name=memory.task_name,
+                creditos_disponibles=memory.creditos_disponibles
+        ) for memory in memories]
+    except Exception as e:
+        logger.error(f"Error al consultar usuarios con 2 o más días de inactividad")
+        db.rollback()
+        return None

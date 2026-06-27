@@ -67,15 +67,16 @@ class AiBoDirector:
         # Es la respuesta a la acción rápida del menú
         elif message_type == 'text' and memory.active_context in self.actions: 
             # Determina el subestado de ejecución
-            transicion, mensaje, memory = self._single_execution(full_message, memory.active_context, memory, db_session, current_date)
+            transicion, mensaje, memory = self._single_execution(full_message, memory.active_context, memory, db_session, current_date, message_type)
             send_transition(db_session, memory.user_id, memory.active_context, transicion, **mensaje)
             if not (memory.active_context == 'bienvenida' and transicion in ["transicion","transicion_proactiva","pide_nuevamente","mision_ok"]):
                 send_transition(db_session, memory.user_id, "IDLE", None)
                 memory.reset_active_context()
 
-        elif message_type == 'text' and intention == "":
+        elif message_type in ('text','audio') and intention == "":
+            logger.info(f"Message Type {message_type}")
             # Envia el menú
-            self._plan_and_execute(full_message, memory, db_session, current_date)
+            self._plan_and_execute(full_message, memory, db_session, current_date, message_type)
             send_transition(db_session, memory.user_id, "IDLE", None)
             memory.reset_active_context()
 
@@ -85,7 +86,7 @@ class AiBoDirector:
 
         return memory
 
-    def _single_execution(self, message, intention, memory, db_session, current_date):
+    def _single_execution(self, message, intention, memory, db_session, current_date, message_type):
         logger.info("Ejecutando acción simple")
         if intention == "bienvenida":
             logger.info("Acción bienvenida")
@@ -103,21 +104,12 @@ class AiBoDirector:
 
         return transicion, mensaje, memory
 
-    def _plan_and_execute(self, message, memory, db_session, current_date):
-        execution_plan = self.llm_layer.split_tasks(message)
+    def _plan_and_execute(self, message, memory, db_session, current_date, message_type):
+        execution_plan = self.llm_layer.split_tasks(message, message_type)
 
         for task in execution_plan:
             if task['action'] == 'menu':
-                send_transition(db_session, memory.user_id, "IDLE", None)
                 break
-            # elif task['action'] == 'agradecimiento':
-            #     action = self.actions[task['action']]
-            #     action_res = action.execute(memory, task['phrase'])
-            #     memory = action_res.get('memory', memory)
-            #     mensaje = action_res.get('mensaje', {})
-            #     transicion = action_res.get('transicion', '')
-
-            #     send_transition(db_session, memory.user_ud, 'interacciones', transicion, **mensaje)
             else:
                 context, action_name = task['action'].split(".")
                 phrase = task['phrase']
