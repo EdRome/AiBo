@@ -3,7 +3,7 @@ import logging
 
 from flask_cors import CORS
 from datetime import datetime, timedelta
-from flask import Flask, jsonify, request, make_response
+from flask import Flask, jsonify, request, make_response, redirect, url_for
 from cloud_task.cloud_task import schedule_inactivity_task, delete_inactivity_task, schedule_users_inactivity_review
 
 from orchestrator.Orchestrator import AiBoDirector
@@ -22,6 +22,7 @@ logging.basicConfig(level=logging.INFO) # O logging.DEBUG para ver todo
 logger = logging.getLogger(__name__)
 
 logger.info("Versión de la aplicación: 4.0")
+numero_aibo = os.environ.get("TWILIO_WHATSAPP_NUMBER")
 
 @app.teardown_appcontext
 def shutdown_session(exception=None):
@@ -86,10 +87,9 @@ def recurrencia():
 
 @app.route('/oauth2callback', methods=["GET"])
 def oauth2callback():
+    code = request.args.get("code")
+    user_id = request.args.get("state")
     try:
-        code = request.args.get("code")
-        user_id = request.args.get("state")
-
         if not code or not user_id:
             return make_response(jsonify({
                 'status': 'sucess',
@@ -106,10 +106,24 @@ def oauth2callback():
                 )
     except Exception as e:
         logger.error(f"Error durante el callback de oauth {e}")
+    finally:
+        wa_url = f"https://wa.me/{numero_aibo}"
 
-    return make_response(jsonify({
-        'status': 'sucess'
-    }), 200)
+        html = f"""<!doctype html>
+    <html><head><meta charset="utf-8"></head>
+    <body>
+    <script>
+    // Regresa al chat de WhatsApp
+    window.location.replace("{wa_url}");
+
+    // Fallback si el webview no permite la navegación
+    setTimeout(function() {{
+        window.location.replace("/oauth/success?ok=1");
+    }}, 1000);
+    </script>
+    </body></html>"""
+
+        return make_response(html, 200)
 
 @app.route('/remainder', methods=['POST'])
 def remainder():
