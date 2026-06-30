@@ -1,5 +1,5 @@
 import os
-from sqlalchemy import MetaData, Column, Integer, String, DateTime
+from sqlalchemy import MetaData, Column, Integer, String, DateTime, 
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.dialects.postgresql import JSONB, ARRAY
 from datetime import datetime

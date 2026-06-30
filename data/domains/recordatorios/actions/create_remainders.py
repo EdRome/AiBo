@@ -3,6 +3,7 @@ from cloud_task.cloud_task import schedule_remainder_task
 from ..repository import insert_remainder
 from ..llm.extractor import get_remainder_data
 from config.utils import formatear_fecha_humana, pick_random_number, remainders_schedule
+from core.services.google import crear_evento_calendario
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +16,7 @@ class CreateRemaindersAction:
         try:
             logger.info("2.2. Procesando información del recordatorio...")
             remainder_data = self._process_remainder_text(memory, message, current_date)
-            recordatorios = self._schedule_remainders(remainder_data, memory, current_date)
+            recordatorios = self._schedule_remainders(remainder_data, memory, current_date, db_session)
             _ = [insert_remainder(recordatorio, db_session) for recordatorio in recordatorios]
 
             num = pick_random_number()
@@ -28,6 +29,7 @@ class CreateRemaindersAction:
             return_obj['transicion'] = "error_registro"
 
         return_obj['memory'] = memory
+        return_obj['action'] = 'recordatorios'
         return return_obj
 
     def _process_remainder_text(self, memory, message, current_date):
@@ -39,10 +41,11 @@ class CreateRemaindersAction:
             logger.error(f"Error al procesar el texto del recordatorio {e}")
             return None
 
-    def _schedule_remainders(self, remainder_data, memory, current_date):
+    def _schedule_remainders(self, remainder_data, memory, current_date, db_session):
         for recordatorio in remainder_data:
             first_remainder, type_first_remainder, second_remainder, type_second_remainder = \
                     remainders_schedule(recordatorio.fecha_recordatorio, current_date)
+
             humano_fecha_recordatorio = formatear_fecha_humana(recordatorio.fecha_recordatorio)
             if first_remainder is not None:
                 schedule_remainder_task(
@@ -69,5 +72,13 @@ class CreateRemaindersAction:
             )
             recordatorio.task_id = task_id
             recordatorio.calcula_delta()
+
+            _ = crear_evento_calendario(
+                memory.user_id, 
+                recordatorio.recordatorio, 
+                recordatorio.fecha_recordatorio,
+                recordatorio.fecha_recordatorio,
+                db_session=db_session
+            )
         
         return remainder_data

@@ -18,3 +18,4 @@ class UserCredentials(Base):
     user_id = Column(String, primary_key=True)
     created_at = Column(DateTime, default=datetime.now(tz_cdmx))
     google_token_data = Column(JSONB)
+    updated_at = Column(DateTime, default=datetime.now(tz_cdmx))

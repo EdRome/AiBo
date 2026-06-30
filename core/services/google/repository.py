@@ -19,7 +19,7 @@ def get_credentials(user_id: str, db_session=None):
         logger.error(f"Error al obtener las credenciales {e}")
         return None
     
-def update_refresh_token(user_id: str, google_token_data: str, db_session=None):
+def update_refresh_token(user_id: str, google_token_data: dict, db_session=None):
     logger.info("Actualizando refresh token")
     db = db_session or get_session()
     try:
@@ -38,3 +38,18 @@ def update_refresh_token(user_id: str, google_token_data: str, db_session=None):
         logger.error(f"Error al actualizar el refresh token {e}")
         db.rollback()
         return False
+
+def insert_new_credential(user_id: str, google_token_data: dict, db_session=None):
+    new_credential = UserCredentials(
+        user_id=user_id,
+        google_token_data=google_token_data
+    )
+
+    db = db_session or get_session()
+    
+    try:
+        db.add(new_credential)
+        db.commit()
+    except Exception as e:
+        logger.error(f"Error al insertar la credencial {e}")
+        db.rollback()

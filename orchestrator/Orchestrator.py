@@ -5,10 +5,9 @@ from data.domains.recordatorios import CreateRemaindersAction, QueryRemaindersAc
 from data.domains.tutorial import Bienvenida
 from data.domains.conversacion import Agradecimiento
 from langchain_google_genai import ChatGoogleGenerativeAI
+from .EventWatcher import Watcher
 from .layers.llm import LLMLayer
-from .Gamification import GamificationManager
 from config.config import MODEL_GEMINI_FLASH_LATEST, ENTITY_TEMPERATURE, ENTITY_MAX_OUTPUT_TOKENS, ENTITY_THINKING_BUDGET
-from data.config.database import get_session
 from core.services.whatsapp import send_transition
 
 
@@ -27,6 +26,7 @@ class AiBoDirector:
     def __init__(self):
         self.content = {}
         self.llm_layer = LLMLayer(model_client=model)
+        self.watcher = Watcher()
         self.actions = {
             'venta': {
                 'registrar_venta': CreateSalesAction(),
@@ -39,7 +39,6 @@ class AiBoDirector:
             'bienvenida': Bienvenida(),
             'agradecimiento': Agradecimiento()
         }
-        # self.db_session = get_session()
         
     def execute_logic(self, memory, current_date, db_session):
         """
@@ -57,6 +56,7 @@ class AiBoDirector:
         full_message = memory.get_message()
         intention = memory.get_intention()
         message_type = memory.get_message_type()
+        action = None
 
         # Es una acción rápida del menú
         if message_type == 'interactive' and intention in self.actions:
@@ -67,7 +67,7 @@ class AiBoDirector:
         # Es la respuesta a la acción rápida del menú
         elif message_type == 'text' and memory.active_context in self.actions: 
             # Determina el subestado de ejecución
-            transicion, mensaje, memory = self._single_execution(full_message, memory.active_context, memory, db_session, current_date, message_type)
+            transicion, mensaje, memory, action = self._single_execution(full_message, memory.active_context, memory, db_session, current_date, message_type)
             send_transition(db_session, memory.user_id, memory.active_context, transicion, **mensaje)
             if not (memory.active_context == 'bienvenida' and transicion in ["transicion","transicion_proactiva","pide_nuevamente","mision_ok"]):
                 send_transition(db_session, memory.user_id, "IDLE", None)
@@ -76,13 +76,17 @@ class AiBoDirector:
         elif message_type in ('text','audio') and intention == "":
             logger.info(f"Message Type {message_type}")
             # Envia el menú
-            self._plan_and_execute(full_message, memory, db_session, current_date, message_type)
+            action = self._plan_and_execute(full_message, memory, db_session, current_date, message_type)
             send_transition(db_session, memory.user_id, "IDLE", None)
             memory.reset_active_context()
 
         else:
             logger.warning(f"Intención no implementada o entendida\n{memory.active_context}\n{message_type}\n{intention}")
             send_transition(db_session, memory.user_id, "errores", "generico")
+
+        memory, mensaje, transicion = self.watcher.execute(memory, action)
+        if transicion != '':
+            send_transition(db_session, memory.user_id, action, transicion, **mensaje)
 
         return memory
 
@@ -101,11 +105,13 @@ class AiBoDirector:
         memory = action_res.get('memory', memory)
         mensaje = action_res.get('mensaje', {})
         transicion = action_res.get('transicion', '')
+        action = action_res.get('action')
 
-        return transicion, mensaje, memory
+        return transicion, mensaje, memory, action
 
     def _plan_and_execute(self, message, memory, db_session, current_date, message_type):
         execution_plan = self.llm_layer.split_tasks(message, message_type)
+        actions = []
 
         for task in execution_plan:
             if task['action'] == 'menu':
@@ -113,16 +119,20 @@ class AiBoDirector:
             else:
                 context, action_name = task['action'].split(".")
                 phrase = task['phrase']
-
-                logger.info(f"Ejecutando accion {task['action']}")
                 
                 action = self.actions[context][action_name]
                 action_res = action.execute(memory, phrase, db_session=db_session, current_date=current_date)
                 memory = action_res.get('memory', memory)
                 mensaje = action_res.get('mensaje', {})
                 transicion = action_res.get('transicion', '')
+                action = action_res.get('action')
 
                 send_transition(db_session, memory.user_id, context, transicion, **mensaje)
 
                 memory.reset_active_context()
+            
+                actions.append(action)
+
+        return actions
+
 

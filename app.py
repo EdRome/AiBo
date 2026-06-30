@@ -96,12 +96,14 @@ def oauth2callback():
                 'message': 'Parámetros insuficientes'
             }), 200)
 
-        message = oauth_callback(code, user_id)
-        if message is not None:
-            send_whatsapp_message(
-                user_id,
-                message
-            )
+        with get_db() as db:
+            message = oauth_callback(code, user_id, get_current_date(), db_session)
+            if message is not None:
+                send_whatsapp_message(
+                    user_id,
+                    message,
+                    db_session=db
+                )
     except Exception as e:
         logger.error(f"Error durante el callback de oauth {e}")
 
@@ -263,18 +265,19 @@ def message():
         'status': 'success'
     }), 200)
 
-# @app.route('/test', methods=['POST'])
+@app.route('/test', methods=['POST'])
 def test():
+    from core.services.google.client import leer_eventos
+    from datetime import timedelta
     return_json = {}
     try:
-        form_data = request.form
-        body = form_data.get('Body', '')
-        user_id = '5215528092514'
-        auth_url = generate_auth_url(user_id)
-        return_json = {
-            'status':'success',
-            'auth_url': auth_url
-        }
+        url = generate_auth_url('5215610910426')
+        return_json['url'] = url
+        # with get_db() as db:
+        #     ahora = get_current_date()
+        #     despues = ahora + timedelta(days=1)
+        #     eventos = leer_eventos('5215528092514', ahora, despues, db)
+        #     logger.info(eventos)
     except Exception as e:
         logger.error(e)
         return_json = {

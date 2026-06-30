@@ -15,6 +15,7 @@ class GlobalMemory(BaseModel):
     nombre_emprendedor: str = Field(default="")
     nombre_negocio: str = Field(default="")
     language: str = Field(strict=True, default="es", validate_default=True)
+    request_google_calendar: bool = Field(default=False)
 
 class Memory(BaseModel):
     user_id: str = Field(strict=True, default="", validate_default=True)
