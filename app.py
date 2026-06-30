@@ -265,7 +265,7 @@ def message():
         'status': 'success'
     }), 200)
 
-@app.route('/test', methods=['POST'])
+# @app.route('/test', methods=['POST'])
 def test():
     from core.services.google.client import leer_eventos
     from datetime import timedelta

@@ -154,27 +154,29 @@ def get_remainder_by_criteria(user_id: str, start_date=None, end_date=None, sear
 def get_google_events(user_id, lista, start_date, end_date, search_query=None, db_session=None):
     start_date = datetime.combine(start_date, time.min, ZoneInfo("America/Mexico_City"))
     end_date = datetime.combine(start_date, time.min, ZoneInfo("America/Mexico_City"))
-    
-    eventos = leer_eventos(user_id, start_date, end_date, db_session)
-    for evento in eventos:
-        mensaje = evento['summary']
-        if search_query is not None and search_query not in unidecode(mensaje.lower()):
-            continue
+    try:
+        eventos = leer_eventos(user_id, start_date, end_date, db_session)
+        for evento in eventos:
+            mensaje = evento['summary']
+            if search_query is not None and search_query not in unidecode(mensaje.lower()):
+                continue
 
-        fecha = datetime.fromisoformat(evento['start']['dateTime']).astimezone(evento['start']['timeZone'])
+            fecha = datetime.fromisoformat(evento['start']['dateTime']).astimezone(evento['start']['timeZone'])
 
-        dia_semana = DIAS[fecha.weekday()]
-        dia = fecha.day
-        mes = MESES[fecha.month - 1]
-        hora = fecha.hour
-        minutos = str(fecha.minute).zfill(2)
+            dia_semana = DIAS[fecha.weekday()]
+            dia = fecha.day
+            mes = MESES[fecha.month - 1]
+            hora = fecha.hour
+            minutos = str(fecha.minute).zfill(2)
 
-        icono = "⏲️"
-        if fecha < get_current_date():
-            icono = "✅"
+            icono = "⏲️"
+            if fecha < get_current_date():
+                icono = "✅"
 
-        linea = f"{icono} El {dia_semana} {dia} de {mes}: {mensaje} a las {hora}:{minutos}\n"
-        lista.append(linea)
-
-    return lista
+            linea = f"{icono} El {dia_semana} {dia} de {mes}: {mensaje} a las {hora}:{minutos}\n"
+            lista.append(linea)
+    except Exception as e:
+        logger.warning(f"Hubo un error al leer los recordatorios de google {e}")
+    finally:
+        return lista
         

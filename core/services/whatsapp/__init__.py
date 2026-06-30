@@ -13,6 +13,8 @@ def send_transition(db_session, user_phone, active_context, message_key, **kwarg
     text = get_text_by_lang(active_context, message_key=message_key, **kwargs)
     if active_context == 'IDLE' and message_key != 'menu_tutorial':
         return send_whatsapp_template(user_phone, text, kwargs)
+    elif active_context == 'recordatorios' and message_key == 'conectar_calendario':
+        return send_whatsapp_template(user_phone, text, kwargs)
     return send_whatsapp_message(user_phone, text, False, db_session)
 
 __all__ = [

@@ -34,8 +34,6 @@ def get_remainder_data(message, user_id, current_date):
         for recordatorio in recordatorio_create.recordatorios:
             recordatorio_cdmx = recordatorio.fecha_recordatorio.replace(tzinfo=tz_cdmx)
             recordatorio_cdmx = fix_past_date_on_remainder(recordatorio_cdmx)
-            # if (recordatorio_cdmx - current_date).days < 0:
-            #     recordatorio_cdmx += timedelta(days=1)
             
             recordatorios_return.append(
                 Recordatorio(

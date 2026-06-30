@@ -1,4 +1,5 @@
 import os
+import json
 import logging
 from twilio.rest import Client
 from data.domains.mensajes import insert_message, Message
@@ -52,7 +53,7 @@ def send_whatsapp_template(to, content_sid, content_variables=None):
                 from_='whatsapp:' + os.environ.get("TWILIO_WHATSAPP_NUMBER"),
                 to='whatsapp:' + to,
                 content_sid=content_sid,
-                content_variables=content_variables
+                content_variables=json.dumps(content_variables)
             )
         _persist(to, content_sid)
         return content_sid

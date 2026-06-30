@@ -61,7 +61,6 @@ class AiBoDirector:
         # Es una acción rápida del menú
         if message_type == 'interactive' and intention in self.actions:
             memory.active_context = intention # Almacena en la BD el estado que debe activarse
-            logger.info(f"Este es un mensaje de transición para determinar el subestado del contexto {memory.active_context}")
             send_transition(db_session, memory.user_id, memory.active_context, "transicion")
 
         # Es la respuesta a la acción rápida del menú
@@ -74,7 +73,6 @@ class AiBoDirector:
                 memory.reset_active_context()
 
         elif message_type in ('text','audio') and intention == "":
-            logger.info(f"Message Type {message_type}")
             # Envia el menú
             action = self._plan_and_execute(full_message, memory, db_session, current_date, message_type)
             send_transition(db_session, memory.user_id, "IDLE", None)
@@ -84,16 +82,15 @@ class AiBoDirector:
             logger.warning(f"Intención no implementada o entendida\n{memory.active_context}\n{message_type}\n{intention}")
             send_transition(db_session, memory.user_id, "errores", "generico")
 
-        memory, mensaje, transicion = self.watcher.execute(memory, action)
+        memory, mensaje, transicion, intention = self.watcher.execute(memory, action)
         if transicion != '':
-            send_transition(db_session, memory.user_id, action, transicion, **mensaje)
+            send_transition(db_session, memory.user_id, intention, transicion, **mensaje)
 
         return memory
 
     def _single_execution(self, message, intention, memory, db_session, current_date, message_type):
         logger.info("Ejecutando acción simple")
         if intention == "bienvenida":
-            logger.info("Acción bienvenida")
             action = self.actions[intention]
             action_res = action.execute(memory, message, db_session=db_session, current_date=current_date)
         else:

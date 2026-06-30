@@ -21,8 +21,10 @@ def setup_credentials(user_id: str, db_session=None):
     try:
         if credentials:
             logger.info("# 2. Reconstruyes las credenciales")
-            creds = Credentials.from_authorized_user_info(credentials.google_token_data)
-
+            
+            creds = Credentials.from_authorized_user_info(
+                json.loads(credentials.google_token_data) if isinstance(credentials.google_token_data, str) else credentials.google_token_data
+            )
             if creds and creds.expired and creds.refresh_token:
                 logger.info("Si el access_token expiró (duran 1 hora), usamos el refresh_token de forma transparente")
                 creds.refresh(Request())
@@ -55,10 +57,10 @@ def generate_auth_url(user_id: str) -> str:
 
     }
 
-    url_base = "https://accounts.google.com/o/oauth2/auth"
-    authorization_url = f"{url_base}?{urllib.parse.urlencode(params)}"
+    # url_base = "https://accounts.google.com/o/oauth2/auth"
+    # authorization_url = f"{url_base}?{urllib.parse.urlencode(params)}"
     
-    return authorization_url
+    return urllib.parse.urlencode(params)
 
 def oauth_callback(code, user_id, current_date, db_session=None):
     """Cuando el usuario se autentica, Google regresa al callback para construir el token 
@@ -162,7 +164,7 @@ def crear_evento_calendario(user_id: str, titulo: str, fecha_inicio: datetime, f
             # Respuesta amigable para confirmar al usuario en WhatsApp
             return link_evento
 
-        return None
-
     except Exception as e:
         logger.error(f"Error al crear el evento: {e}")
+    
+    return None
