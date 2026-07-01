@@ -1,7 +1,6 @@
-import json
 import logging
 from typing import Tuple, Any, Dict
-from core.services.google import generate_auth_url, get_credentials
+from config.utils import pick_random_number
 
 logger = logging.getLogger(__name__)
 
@@ -29,9 +28,18 @@ class Watcher:
         try:
             # Si el usuario no se ha registrado, envía mensaje con opción para registrarse
             if not memory.global_memory.request_google_calendar:
+                num = pick_random_number(1,3)
                 memory.global_memory.request_google_calendar = True
-                return_obj['mensaje'] = {'state': memory.user_id}
-                return_obj['transicion'] = "conectar_calendario"
+                if memory.global_memory.nombre_emprendedor == "":
+                    num = 3
+                    return_obj['mensaje'] = {'state': memory.user_id}
+                else:
+                    if num != 3:
+                        return_obj['mensaje'] = {'state': memory.user_id, 'nombre': memory.global_memory.nombre_emprendedor}
+                    else:
+                        return_obj['mensaje'] = {'state': memory.user_id}
+
+                return_obj['transicion'] = "conectar_calendario_" + str(num)
                 return_obj['memory'] = memory
                 return_obj['intention'] = 'recordatorios'
         except Exception as e:
