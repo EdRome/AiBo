@@ -4,7 +4,7 @@ from data.config.database import get_session
 from .schemas import Memory, GlobalMemory
 from .models import Memory as MemorySQL
 from .models import MemoriaEstados as MemoriaEstadosSQL
-from sqlalchemy import update, func, or_
+from sqlalchemy import update, func
 
 logger = logging.getLogger(__name__)
 

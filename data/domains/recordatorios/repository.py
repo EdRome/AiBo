@@ -3,7 +3,7 @@ from unidecode import unidecode
 from sqlalchemy import update, func, and_
 from datetime import timedelta, datetime, time
 from zoneinfo import ZoneInfo
-from data.db.utils import get_session
+from data.config.database import get_session
 from .models import Recordatorio as RecordatorioSQL
 from .schemas import RecordatorioBase
 from config.utils import formatear_fecha_humana_intervalo, get_current_date

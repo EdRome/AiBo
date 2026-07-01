@@ -6,7 +6,7 @@ from datetime import timedelta
 from zoneinfo import ZoneInfo
 from .schemas import VentaCreate
 from .models import VentaDB, DetalleVentaDB, SalesSummaryDB
-from data.db.utils import get_session
+from data.config.database import get_session
 from config.utils import formatear_fecha_humana_intervalo
 
 logger = logging.getLogger(__name__)

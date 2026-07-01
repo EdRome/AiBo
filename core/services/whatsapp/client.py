@@ -3,7 +3,7 @@ import json
 import logging
 from twilio.rest import Client
 from data.domains.mensajes import insert_message, Message
-from data.db.s3.s3_conn import get_s3_storage
+from data.config.s3 import get_s3_storage
 
 logger = logging.getLogger(__name__)
 

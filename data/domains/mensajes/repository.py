@@ -1,9 +1,8 @@
 import logging
-import json
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from sqlalchemy import func
-from data.db.utils import get_session
+from data.config.database import get_session
 from .models import Message
 
 logger = logging.getLogger(__name__)
