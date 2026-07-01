@@ -52,6 +52,7 @@ class CreateSalesAction:
             return_obj['transicion'] = 'error_registro'
 
         return_obj['memory'] = memory
+        return_obj['action'] = 'venta'
         return return_obj
 
     def _process_sales_text(self, memory, message, current_date):

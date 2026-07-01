@@ -34,4 +34,5 @@ class QuerySalesAction:
             return_obj['transicion'] = "error_consulta"
 
         return_obj['memory'] = memory
+        return_obj['action'] = 'venta'
         return return_obj

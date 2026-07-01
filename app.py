@@ -3,7 +3,7 @@ import logging
 
 from flask_cors import CORS
 from datetime import datetime, timedelta
-from flask import Flask, jsonify, request, make_response
+from flask import Flask, jsonify, request, make_response, redirect, url_for
 from cloud_task.cloud_task import schedule_inactivity_task, delete_inactivity_task, schedule_users_inactivity_review
 
 from orchestrator.Orchestrator import AiBoDirector
@@ -11,6 +11,7 @@ from data.domains.mensajes import insert_message, Message
 from data.domains.memoria import Memory, GlobalMemory, get_memory, insert_memory, update_memory, get_2_more_days_last_interaction
 from data.domains.recordatorios import get_remainder_by_task_id, update_remainder
 from core.services.whatsapp import send_whatsapp_message, send_transition
+from core.services.google import oauth_callback, generate_auth_url
 from data.config.database import get_db, db_session
 from config.utils import get_current_date, pick_random_number
 
@@ -21,6 +22,7 @@ logging.basicConfig(level=logging.INFO) # O logging.DEBUG para ver todo
 logger = logging.getLogger(__name__)
 
 logger.info("Versión de la aplicación: 4.0")
+numero_aibo = os.environ.get("TWILIO_WHATSAPP_NUMBER")
 
 @app.teardown_appcontext
 def shutdown_session(exception=None):
@@ -82,6 +84,46 @@ def recurrencia():
         'status': 'success',
         'message': 'Recurrencia validada correctamente'
     }), 200)
+
+@app.route('/oauth2callback', methods=["GET"])
+def oauth2callback():
+    code = request.args.get("code")
+    user_id = request.args.get("state")
+    try:
+        if not code or not user_id:
+            return make_response(jsonify({
+                'status': 'sucess',
+                'message': 'Parámetros insuficientes'
+            }), 200)
+
+        with get_db() as db:
+            message = oauth_callback(code, user_id, get_current_date(), db_session)
+            if message is not None:
+                send_whatsapp_message(
+                    user_id,
+                    message,
+                    db_session=db
+                )
+    except Exception as e:
+        logger.error(f"Error durante el callback de oauth {e}")
+    finally:
+        wa_url = f"https://wa.me/{numero_aibo}"
+
+        html = f"""<!doctype html>
+    <html><head><meta charset="utf-8"></head>
+    <body>
+    <script>
+    // Regresa al chat de WhatsApp
+    window.location.replace("{wa_url}");
+
+    // Fallback si el webview no permite la navegación
+    setTimeout(function() {{
+        window.location.replace("/oauth/success?ok=1");
+    }}, 1000);
+    </script>
+    </body></html>"""
+
+        return make_response(html, 200)
 
 @app.route('/remainder', methods=['POST'])
 def remainder():
@@ -239,31 +281,25 @@ def message():
 
 # @app.route('/test', methods=['POST'])
 def test():
+    from core.services.google.client import leer_eventos
+    from datetime import timedelta
+    return_json = {}
     try:
-        data = request.get_json()
-        sender = data.get('sender')
-        message = data.get('message')
-        fecha_recordatorio = data.get("fecha_final_recordatorio")
-        tipo_recordatorio = data.get("tipo_recordatorio")
-        with get_db() as db:
-            if fecha_recordatorio is not None and tipo_recordatorio is not None:
-                send_transition(
-                    db, sender, "recordatorios", tipo_recordatorio, **{"recordatorio": message, "fecha_recordatorio": fecha_recordatorio}
-                )
-            elif fecha_recordatorio is None and tipo_recordatorio is not None:
-                send_transition(
-                    db, sender, "recordatorios", tipo_recordatorio, **{"recordatorio": message}
-                )
-            else:
-                send_transition(
-                    db, sender, "recordatorios", "envia_recordatorio", **{"recordatorio": message}
-                )
+        url = generate_auth_url('5215610910426')
+        return_json['url'] = url
+        # with get_db() as db:
+        #     ahora = get_current_date()
+        #     despues = ahora + timedelta(days=1)
+        #     eventos = leer_eventos('5215528092514', ahora, despues, db)
+        #     logger.info(eventos)
     except Exception as e:
         logger.error(e)
+        return_json = {
+            'status': 'error',
+            'error': e
+        }
 
-    return make_response(jsonify({
-        'status': 'success'
-    }), 200)
+    return make_response(jsonify(return_json), 200)
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8080))

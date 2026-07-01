@@ -63,7 +63,11 @@
             "faltan_5_minutos": "⏰ Faltan 5 minutos para {recordatorio}",
             "falta_1_hora": "⏰ Falta 1 hora para {recordatorio}",
             "falta_1_dia": "⏰ Recuerda que {fecha_recordatorio} {recordatorio}",
-            "envia_recordatorio": "📣 RECORDATORIO:\n{recordatorio}"
+            "envia_recordatorio": "📣 RECORDATORIO:\n{recordatorio}",
+            "conectar_calendario": "HX300878e2654a0593c96103d29b97f649",
+            "conectar_calendario_1": "HX885be485a64f890fe606fd843b134ebd",
+            "conectar_calendario_2": "HX51f0ac9f6d5ec9d17b1335660eaefee8",
+            "conectar_calendario_3": "HXc37bc77f5a572545f7eb8ba64d8e8d3e"
         },
         "errores": {
             "generico": "Parece que hoy no eres la única que necesita un respiro; mis servidores acaban de pedir cinco minutos. Tu comando fue perfecto, hasta la mejor tecnología se pone nerviosa con una jefa tan exigente.🙊\n\nYa mandé a mis ingenieros a despertar los cables. Aprovechemos este micro-segundo para que tú también tomes un trago de agua y relajes los hombros.\nTodo estará blindado y de regreso antes de que te des cuenta💪"

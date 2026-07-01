@@ -30,4 +30,5 @@ class QueryRemaindersAction:
             return_obj['transicion'] = "error_consulta"
         
         return_obj['memory'] = memory
+        return_obj['action'] = 'recordatorios'
         return return_obj
