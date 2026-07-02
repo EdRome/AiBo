@@ -5,9 +5,11 @@ from requests.auth import HTTPBasicAuth
 from datetime import datetime
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
+from zoneinfo import ZoneInfo
 
 account_sid = os.environ.get("TWILIO_ACCOUNT_SID")
 account_token = os.environ.get("TWILIO_AUTH_TOKEN")
+tz_cdmx = ZoneInfo("America/Mexico_City")
 
 logger = logging.getLogger(__name__)
 

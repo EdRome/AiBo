@@ -1,5 +1,6 @@
-from .actions import Agradecimiento
+from .actions import Agradecimiento, Descubre
 
 __all__ = [
-    'Agradecimiento'
+    'Agradecimiento',
+    'Descubre'
 ]

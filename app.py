@@ -1,13 +1,15 @@
 import os
 import logging
+from datetime import timedelta
 
+import pendulum
 from flask_cors import CORS
-from datetime import datetime, timedelta
 from flask import Flask, jsonify, request, make_response
-from cloud_task.cloud_task import schedule_inactivity_task, delete_inactivity_task, schedule_users_inactivity_review
 
 from orchestrator.Orchestrator import AiBoDirector
+from cloud_task.cloud_task import schedule_inactivity_task, delete_inactivity_task, schedule_users_inactivity_review, schedule_descrubre_task
 from data.domains.mensajes import insert_message, Message
+from data.domains.conversacion import Descubre
 from data.domains.memoria import Memory, GlobalMemory, get_memory, insert_memory, update_memory, get_2_more_days_last_interaction
 from data.domains.recordatorios import get_remainder_by_task_id, update_remainder
 from core.services.whatsapp import send_whatsapp_message, send_transition
@@ -32,9 +34,31 @@ def shutdown_session(exception=None):
     """
     db_session.remove()  # Limpia la sesión del hilo y libera la conexión
 
+@app.route('/descrube', methods=["POST"])
+def descrube():
+    try:
+        data = request.get_json()
+        sender = data.get('sender')
+        message = data.get('message')
+
+        with get_db() as db:
+            memory = get_memory(sender, db)
+            
+            ultima_interaccion = pendulum.from_timestamp(memory.last_interaction.timestamp(), tz="America/Mexico_City")
+            hoy = pendulum.from_timestamp(get_current_date().timestamp(), tz="America/Mexico_City")
+
+            if ultima_interaccion.is_same_day(hoy):
+                send_whatsapp_message(sender, message, False, db)
+            else:
+                logger.warning("El usuario no regreso a la herramienta")
+
+    except Exception as e:
+        logger.error(f"Error al enviar descrube {e}")
+
 @app.route('/recurrencia', methods=["POST"])
 def recurrencia():
     try:
+        mensajes_descubre = Descubre()
         hoy = get_current_date()
         with get_db() as db:
             try:
@@ -51,6 +75,8 @@ def recurrencia():
                     # Hace 2 días que no tiene interacción pero no más de 3 días
                     if hace_tres_dias < user.last_interaction <= hace_dos_dias:
                         send_transition(db, user.user_id, "interacciones", "dos_dias_sin_interaccion")
+                        mensaje = mensajes_descubre.execute(None, None, None, db)['mensaje']
+                        schedule_descrubre_task(user.user_id, mensaje)
                         logger.info("Hace 2 días que no tiene interacción pero no más de 3 días")
 
                     # Hace 3 días que no tiene interacción pero no más de 4 días

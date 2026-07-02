@@ -39,7 +39,7 @@ def get_sticker(sticker_name):
     _sticker_cache[sticker_name] = signed_url
     return signed_url
 
-def send_whatsapp_template(to, content_sid, content_variables=None):
+def send_whatsapp_template(to, content_sid, content_variables=None, db_session=None):
     try:
         logger.info(f"Enviando mensaje a {to} con content_sid {content_sid} y content_variables {content_variables}")
         if content_variables is None:
@@ -55,7 +55,7 @@ def send_whatsapp_template(to, content_sid, content_variables=None):
                 content_sid=content_sid,
                 content_variables=json.dumps(content_variables)
             )
-        _persist(to, content_sid)
+        _persist(to, content_sid, db_session=db_session)
         return content_sid
     except Exception as e:
         logger.error(f"Error al enviar el mensaje: {e}")

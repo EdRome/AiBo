@@ -18,6 +18,7 @@ url = base_url + '/consume_message'
 url_summary = base_url + '/sales_summary'
 url_remainder = base_url + '/remainder'
 url_inactivity_review = base_url + "/recurrencia"
+url_descubre = base_url + '/descubre'
 service_account = "aibo-sql@gen-lang-client-0680947061.iam.gserviceaccount.com"
 
 client = tasks_v2.CloudTasksClient()
@@ -188,6 +189,35 @@ def schedule_inactivity_task(phone_number: str):
         logger.error(f"Error al crear la tarea de inactividad: {e}")
 
     response = client.create_task(request={'parent': parent, 'task': task})
+    return task_id
+
+def schedule_descrubre_task(phone_number: str, message: str):
+    d = datetime.now() + timedelta(hours=2)
+    timestamp = timestamp_pb2.Timestamp()
+    timestamp.FromDatetime(d)
+
+    payload = {'sender': phone_number, 'message': message}
+
+    task_id = f"{uuid.uuid4()}-descubre-{phone_number}"
+    task_name = f"projects/{project}/locations/{location}/queues/{queue}/tasks/{task_id}"
+    task = {
+        'name': task_name,
+        'http_request': {
+            'http_method': tasks_v2.HttpMethod.POST,
+            'url': url_descubre,
+            'headers': {
+                'Content-Type': 'application/json'
+            },
+            'body': json.dumps(payload).encode(),
+            'oidc_token': {
+                'service_account_email': service_account,
+                'audience': url_descubre
+            }
+        },
+        'schedule_time': timestamp
+    }
+
+    _ = client.create_task(request={'parent': parent, 'task': task})
     return task_id
 
 def delete_remainder_activity(task_name):
