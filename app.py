@@ -3,7 +3,7 @@ import logging
 
 from flask_cors import CORS
 from datetime import datetime, timedelta
-from flask import Flask, jsonify, request, make_response, redirect, url_for
+from flask import Flask, jsonify, request, make_response
 from cloud_task.cloud_task import schedule_inactivity_task, delete_inactivity_task, schedule_users_inactivity_review
 
 from orchestrator.Orchestrator import AiBoDirector
@@ -70,7 +70,7 @@ def recurrencia():
                         logger.info("Hace 5 días o más que no tiene interacción")
 
                     logger.info("Enviando menú")
-                    send_transition(db_session, user.user_id, "IDLE", None)
+                    send_transition(db, user.user_id, "IDLE", None)
                     user.reset_active_context()
                     update_memory(user, db)
             except Exception as e:
@@ -97,7 +97,7 @@ def oauth2callback():
             }), 200)
 
         with get_db() as db:
-            message = oauth_callback(code, user_id, get_current_date(), db_session)
+            message = oauth_callback(code, user_id, get_current_date(), db)
             if message is not None:
                 send_whatsapp_message(
                     user_id,
@@ -247,7 +247,7 @@ def message():
                     machine_stack=[], 
                     global_memory=GlobalMemory(), 
                     local_state={}, 
-                    last_interaction=datetime.now(),
+                    last_interaction=get_current_date(),
                     task_name=""
                 )
                 language = "es"
